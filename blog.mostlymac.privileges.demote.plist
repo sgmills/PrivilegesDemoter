@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- watches for the SignalFile under /tmp -->
+	<key>Label</key>
+	<string>blog.mostlymac.privileges.demote</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/jamf</string>
+		<string>policy</string>
+		<string>-event</string>
+		<string>privilegesDemote</string>
+	</array>
+	<key>WatchPaths</key>
+	<array>
+		<string>/tmp/privilegesDemote</string>
+	</array>
+</dict>
+</plist>
