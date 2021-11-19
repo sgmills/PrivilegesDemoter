@@ -124,7 +124,7 @@ Do you still require elevated privileges?"
 		# If the user clicked YES reset timer. If they clicked NO or timeout occurred, remove admin rights
 		if [[ $buttonClicked = "0" ]]; then
 			echo "$stamp Decision: "$currentUser" says they still need admin rights on MachineID: $UDID."
-			echo "$stamp Info: Resetting timer and allowing "$currentUser" to remain an admin on MachineID: $UDID."
+			echo "$stamp Status: Resetting timer and allowing "$currentUser" to remain an admin on MachineID: $UDID."
 			
 			# Clean up privilegegs check log file to reset timer
 			# Location, must match logFile in "checkPrivileges.sh"
