@@ -10,6 +10,12 @@ if launchctl list | grep -q blog.mostlymac.privileges.demote; then
 	launchctl bootout system /Library/LaunchDaemons/blog.mostlymac.privileges.demote.plist
 fi
 
-# Remove check files
-rm /tmp/privilegesDemote
-rm /tmp/privilegesCheck
+# Remove demote file if needed
+if [ -f /tmp/privilegesDemote ]; then
+	rm /tmp/privilegesDemote
+fi
+
+# Remove check file if needed
+if [ -f /tmp/privilegesCheck ]; then
+	rm /tmp/privilegesCheck
+fi
