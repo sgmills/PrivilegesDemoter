@@ -28,30 +28,24 @@ if [[ $currentUser == "" ]]; then
 fi
 
 # Check if user is an admin
-admin=$( dseditgroup -o checkmember -m $currentUser admin )
-
-# Set user type variable
-if [[ $? = 0 ]]; then
-	userType="Admin"
-else
-	userType="Standard"
-	rm "${logFile}"
-	exit 0
-fi
-		
-# Process admin time
-if [[ "${userType}" == "Admin" ]]; then	
+if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin | grep -q "yes"; then
+	# Process admin time
 	oldTimeStamp=$(head -1 ${logFile})
 	echo ${timeStamp} >> ${logFile}
-
-	adminTime=$((${timeStamp} - ${oldTimeStamp}))
-fi
 	
-# If user is admin for more than the time limit, trigger launchDaemon blog.mostlymac.privileges.demote.plist
-# Signal file tells launchDaemon to trigger jamf policy Demote Admin Privileges
-if [[ ${adminTime} -ge ${timeLimit} ]]; then
-	touch "${signalFile}"
-	sleep 5
-	rm "${signalFile}"
+	adminTime=$((${timeStamp} - ${oldTimeStamp}))
+	
+	# If user is admin for more than the time limit, trigger launchDaemon com.banno.privileges.demote.plist
+	# Signal file tells launchDaemon to trigger jamf policy Demote Admin Privileges
+	if [[ ${adminTime} -ge ${timeLimit} ]]; then
+		touch "${signalFile}"
+		sleep 5
+		rm "${signalFile}"
+	fi
+	
+else
+	# User is not admin. Reset timer and exit
+	rm "${logFile}"
+	exit 0
 fi
 	

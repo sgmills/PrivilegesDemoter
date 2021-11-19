@@ -53,28 +53,21 @@ exec &>>(tee -a "$privilegesLog")
 # Function to confirm privileges have been changed successfully and log error after 1 retry.
 # Takes user as argument $1
 function confirmPrivileges () {
-	# Check if user is in the admin group
-	admin=$( dseditgroup -o checkmember -m "${1}" admin )
 	
 	# If user is still admin, try revoking again using dseditgroup
-	if [[ $? = 0 ]]; then
+	if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin | grep -q "yes"; then
 		echo "$stamp Warn: "${1}" is still an admin on MachineID: $UDID. Trying again..."
 		/usr/sbin/dseditgroup -o edit -d "${1}" -t user admin
-		
-		# Check if user is in admin group again
-		admin=$( dseditgroup -o checkmember -m "${1}" admin )
+		sleep 1
 		
 		# If user was not sucessfully demoted after retry, write error to log. Otherwise log success.
-		if [[ $? = 0 ]]; then
+		if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin | grep -q "yes"; then
 			echo "$stamp Error: Could not demote "${1}" to standard on MachineID: $UDID."
 		else
 			# Successfully demoted with dseditgroup. Need to update dock tile
-			# Check if Dock is running
-			checkDock="$(pgrep Dock)"
-			
 			# If running, reload dock to display correct privileges tile
-			if [[ $checkDock -gt 0 ]]; then
-				killall Dock
+			if /usr/bin/pgrep Dock > 0; then
+				/usr/bin/killall Dock
 			fi
 			
 			# Log that user was successfully demoted.
@@ -103,11 +96,8 @@ if [[ $currentUser != "" ]]; then
 	# Get the current user's UID
 	currentUserID=$(id -u "$currentUser")
 	
-	# Check if current user is an admin
-	admin=$( dseditgroup -o checkmember -m "$currentUser" admin )
-	
 	# If current user is an admin, offer to remove rights
-	if [[ $? = 0 ]]; then
+	if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin | grep -q "yes"; then
 		
 		# User with admin is logged in. Ask before removing rights
 		description="You are currently an administrator on this device.
@@ -143,6 +133,7 @@ Do you still require elevated privileges?"
 			# Revoke rights with PrivilegesCLI
 			echo "$stamp Decision: "$currentUser" no longer needs admin rights (or timeout occurred). Removing rights on MachineID: $UDID now."
 			launchctl asuser "$currentUserID" sudo -u "$currentUser" "/Applications/Privileges.app/Contents/Resources/PrivilegesCLI" --remove &> /dev/null
+			sleep 1
 			
 			# Run confirm privileges function with current user.
 			confirmPrivileges "$currentUser"
@@ -159,15 +150,13 @@ else
 	# Get the last user's UID
 	lastUserID=$(id -u "$lastUser")
 	
-	# Check if last user is an admin
-	admin=$( dseditgroup -o checkmember -m "$lastUser" admin )
-	
 	# If last user is an admin, remove rights silently
-	if [[ $? = 0 ]]; then
+	if /usr/sbin/dseditgroup -o checkmember -m "$lastUser" admin | grep -q "yes"; then
 		# No user logged in. Revoke last user's rights
 		echo "$stamp Decision: Removing admin rights for "$lastUser" on MachineID: $UDID silently."
 		# Need to use dseditgroup instead of PrivilegesCLI because no user context exists
 		/usr/sbin/dseditgroup -o edit -d "$lastUser" -t user admin
+		sleep 1
 		
 		# Run confirm privileges function with last user.
 		confirmPrivileges "$lastUser"
