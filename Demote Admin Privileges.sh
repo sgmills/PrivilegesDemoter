@@ -14,7 +14,7 @@
 #	for more than 15 minutes, they will be reminded to use standard user rights and offered the
 #	option to remain admin or demote themselves.
 #
-#	Events to elevate privileges or demote are logged.
+#	Events to elevate privileges or demote are logged at /var/log/privileges.log.
 #
 ####################################################################################################
 # LOG SETUP #

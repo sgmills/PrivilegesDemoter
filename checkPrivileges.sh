@@ -35,7 +35,7 @@ if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin | grep -q "yes";
 	
 	adminTime=$((${timeStamp} - ${oldTimeStamp}))
 	
-	# If user is admin for more than the time limit, trigger launchDaemon com.banno.privileges.demote.plist
+	# If user is admin for more than the time limit, trigger launchDaemon blog.mostlymac.privileges.demote.plist
 	# Signal file tells launchDaemon to trigger jamf policy Demote Admin Privileges
 	if [[ ${adminTime} -ge ${timeLimit} ]]; then
 		touch "${signalFile}"
