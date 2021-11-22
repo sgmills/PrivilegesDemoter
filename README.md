@@ -8,7 +8,7 @@ PrivilegesDemoter consists of two scripts and two launchDaemons. The first launc
 
 Once that calculation passes 15 minutes, a signal file gets created. The signal file tells the second launchDaemon to call a Jamf policy. I chose 15 minutes here because that should be more than enough time to perform an admin task or two (like installing an update).
 
-So far we have confirmed that there is an admin user on the machine, and that user has been an admin for more than 15 minutes. The Jamf policy is where all the real work gets done. In the policy called from Jamf we set up a log file to track each time the script runs. Then, we use a jamf helper message to ask if the user still requires admin rights.
+So far we have confirmed that there is an admin user on the machine, and that user has been an admin for more than 15 minutes. The Jamf policy is where all the real work gets done. We use a jamf helper message to ask if the user still requires admin rights.
 
 - Clicking “Yes” resets the timer allowing the user to remain an administrator for another 15 minutes, at which point the reminder will reappear.
 - Clicking “No” revokes administrator privileges immediately. 
