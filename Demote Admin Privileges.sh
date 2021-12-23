@@ -33,17 +33,6 @@ fi
 # Get machine UDID
 UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}' )
 
-# The Privileges.app elevation event is not logged elsewhere, so this should capture it
-# Grab last 25 minutes of logs from privileges helper
-privilegesHelperLog=$( log show --style compact --predicate 'process == "corp.sap.privileges.helper"' --last 25m | grep "SAPCorp" )
-
-# Add elevation event, machine udid, and event to log if found
-if [ ! -z "$privilegesHelperLog" ]; then
-	echo "$privilegesHelperLog on MachineID: $UDID" >> $privilegesLog
-else
-	echo "$stamp Info: No Privileges.app elevation event found on MachineID: $UDID" >> $privilegesLog
-fi
-
 # Redirect output to log file and stdout for jamf logging
 exec &>>(tee -a "$privilegesLog")
 
