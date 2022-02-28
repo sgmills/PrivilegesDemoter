@@ -19,3 +19,13 @@ fi
 if [ -f /tmp/privilegesCheck ]; then
 	rm /tmp/privilegesCheck
 fi
+
+# Remove log file if needed
+if [ -f /var/log/privileges.log ]; then
+	rm /var/log/privileges.log
+fi
+
+# Remove cached demotion script if needed
+if [ -d "/Library/Application Support/JAMF/Offline Policies/privilegesDemote" ]; then
+	rm -rf "/Library/Application Support/JAMF/Offline Policies/privilegesDemote"
+fi

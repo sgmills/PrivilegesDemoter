@@ -1,5 +1,25 @@
 #!/bin/bash
 
+# Logging location
+privilegesLog="/var/log/privileges.log"
+
+# Check if log exists and create if needed
+if [ ! -f "$privilegesLog" ]; then
+	touch "$privilegesLog"
+fi
+
+# Get machine UDID
+UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}' )
+
+# The Privileges.app elevation event is not logged elsewhere, so this should capture it
+# Grab last 5 minutes of logs from privileges helper
+privilegesHelperLog=$( log show --style compact --predicate 'process == "corp.sap.privileges.helper"' --last 5m | grep "SAPCorp" )
+
+# Check if elevation even exists and add it to the log file
+if [ "$privilegesHelperLog" ]; then
+	echo "$privilegesHelperLog" | while read line; do echo "${line} on MachineID: $UDID" >> $privilegesLog; done
+fi
+
 # Timelimit in Seconds
 timeLimit="900"
 
@@ -28,7 +48,7 @@ if [[ $currentUser == "" ]]; then
 fi
 
 # Check if user is an admin
-if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin | grep -q "yes"; then
+if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
 	# Process admin time
 	oldTimeStamp=$(head -1 ${logFile})
 	echo ${timeStamp} >> ${logFile}
@@ -46,24 +66,4 @@ if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin | grep -q "yes";
 else
 	# User is not admin. Reset timer and exit
 	rm "${logFile}"
-fi
-
-# Logging location
-privilegesLog="/var/log/privileges.log"
-
-# Check if log exists and create if needed
-if [ ! -f "$privilegesLog" ]; then
-	touch "$privilegesLog"
-fi
-
-# Get machine UDID
-UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}' )
-
-# The Privileges.app elevation event is not logged elsewhere, so this should capture it
-# Grab last 5 minutes of logs from privileges helper
-privilegesHelperLog=$( log show --style compact --predicate 'process == "corp.sap.privileges.helper"' --last 5m | grep "SAPCorp" )
-
-# Check if elevation even exists and add it to the log file
-if [ ! -z "$privilegesHelperLog" ]; then
-	echo "$privilegesHelperLog" | while read line; do echo "${line} on MachineID: $UDID" >> $privilegesLog; done
 fi

@@ -5,7 +5,7 @@
 # SCRIPT: Demote Admin Privileges
 # AUTHOR: Sam Mills (github.com/sgmills)
 # DATE:   09 November 2021
-# REV:    1.0.0
+# REV:    1.1.0
 #
 ####################################################################################################
 #
@@ -44,13 +44,13 @@ exec &>>(tee -a "$privilegesLog")
 function confirmPrivileges () {
 	
 	# If user is still admin, try revoking again using dseditgroup
-	if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin | grep -q "yes"; then
+	if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin &> /dev/null; then
 		echo "$stamp Warn: "${1}" is still an admin on MachineID: $UDID. Trying again..."
 		/usr/sbin/dseditgroup -o edit -d "${1}" -t user admin
 		sleep 1
 		
 		# If user was not sucessfully demoted after retry, write error to log. Otherwise log success.
-		if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin | grep -q "yes"; then
+		if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin &> /dev/null; then
 			echo "$stamp Error: Could not demote "${1}" to standard on MachineID: $UDID."
 		else
 			# Successfully demoted with dseditgroup. Need to update dock tile
@@ -86,7 +86,7 @@ if [[ $currentUser != "" ]]; then
 	currentUserID=$(id -u "$currentUser")
 	
 	# If current user is an admin, offer to remove rights
-	if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin | grep -q "yes"; then
+	if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
 		
 		# User with admin is logged in. Ask before removing rights
 		description="You are currently an administrator on this device.
