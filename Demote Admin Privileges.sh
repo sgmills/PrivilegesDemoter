@@ -33,8 +33,8 @@ fi
 # Get machine UDID
 UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}' )
 
-# Redirect output to log file and stdout for jamf logging
-exec &>>(tee -a "$privilegesLog")
+# Redirect output to log file and stdout for logging
+exec 1> >( tee -a "${privilegesLog}" ) 2>&1
 
 ####################################################################################################
 # FUNCTIONS #
@@ -45,27 +45,27 @@ function confirmPrivileges () {
 	
 	# If user is still admin, try revoking again using dseditgroup
 	if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin &> /dev/null; then
-		echo "$stamp Warn: "${1}" is still an admin on MachineID: $UDID. Trying again..."
+		echo "$stamp Warn: ${1} is still an admin on MachineID: $UDID. Trying again..."
 		/usr/sbin/dseditgroup -o edit -d "${1}" -t user admin
 		sleep 1
 		
 		# If user was not sucessfully demoted after retry, write error to log. Otherwise log success.
 		if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin &> /dev/null; then
-			echo "$stamp Error: Could not demote "${1}" to standard on MachineID: $UDID."
+			echo "$stamp Error: Could not demote ${1} to standard on MachineID: $UDID."
 		else
 			# Successfully demoted with dseditgroup. Need to update dock tile
 			# If running, reload dock to display correct privileges tile
-			if /usr/bin/pgrep Dock > 0; then
+			if /usr/bin/pgrep Dock -gt 0; then
 				/usr/bin/killall Dock
 			fi
 			
 			# Log that user was successfully demoted.
-			echo "$stamp Status: "${1}" is now a standard user on MachineID: $UDID."
+			echo "$stamp Status: ${1} is now a standard user on MachineID: $UDID."
 		fi
 		
 	else
 		# Log that user was successfully demoted.
-		echo "$stamp Status: "${1}" is now a standard user on MachineID: $UDID."
+		echo "$stamp Status: ${1} is now a standard user on MachineID: $UDID."
 	fi
 	
 	# Clean up privilegegs check log file to reset timer
@@ -112,15 +112,15 @@ Do you still require elevated privileges?"
 		
 		# If the user clicked YES reset timer. If they clicked NO or timeout occurred, remove admin rights
 		if [[ $buttonClicked = "0" ]]; then
-			echo "$stamp Decision: "$currentUser" says they still need admin rights on MachineID: $UDID."
-			echo "$stamp Status: Resetting timer and allowing "$currentUser" to remain an admin on MachineID: $UDID."
+			echo "$stamp Decision: $currentUser says they still need admin rights on MachineID: $UDID."
+			echo "$stamp Status: Resetting timer and allowing $currentUser to remain an admin on MachineID: $UDID."
 			
 			# Clean up privilegegs check log file to reset timer
 			# Location, must match logFile in "checkPrivileges.sh"
 			rm /tmp/privilegesCheck &> /dev/null
 		else
 			# Revoke rights with PrivilegesCLI
-			echo "$stamp Decision: "$currentUser" no longer needs admin rights (or timeout occurred). Removing rights on MachineID: $UDID now."
+			echo "$stamp Decision: $currentUser no longer needs admin rights (or timeout occurred). Removing rights on MachineID: $UDID now."
 			launchctl asuser "$currentUserID" sudo -u "$currentUser" "/Applications/Privileges.app/Contents/Resources/PrivilegesCLI" --remove &> /dev/null
 			sleep 1
 			
@@ -129,20 +129,17 @@ Do you still require elevated privileges?"
 		fi
 	else
 		# Current user is not an admin
-		echo "$stamp Info: "$currentUser" is not an admin on MachineID: $UDID."
+		echo "$stamp Info: $currentUser is not an admin on MachineID: $UDID."
 	fi
 else
 	# Get the last user if current user is not logged in
 	lastUser=$( defaults read /Library/Preferences/com.apple.loginwindow lastUserName )
-	echo "$stamp Info: No current user. Last user on MachineID: $UDID was "$lastUser""
-	
-	# Get the last user's UID
-	lastUserID=$(id -u "$lastUser")
+	echo "$stamp Info: No current user. Last user on MachineID: $UDID was $lastUser"
 	
 	# If last user is an admin, remove rights silently
 	if /usr/sbin/dseditgroup -o checkmember -m "$lastUser" admin | grep -q "yes"; then
 		# No user logged in. Revoke last user's rights
-		echo "$stamp Decision: Removing admin rights for "$lastUser" on MachineID: $UDID silently."
+		echo "$stamp Decision: Removing admin rights for $lastUser on MachineID: $UDID silently."
 		# Need to use dseditgroup instead of PrivilegesCLI because no user context exists
 		/usr/sbin/dseditgroup -o edit -d "$lastUser" -t user admin
 		sleep 1
@@ -151,6 +148,6 @@ else
 		confirmPrivileges "$lastUser"
 	else
 		# Last user is not an admin
-		echo "$stamp Info: "$lastUser" is not an admin on MachineID: $UDID."
+		echo "$stamp Info: $lastUser is not an admin on MachineID: $UDID."
 	fi
 fi
