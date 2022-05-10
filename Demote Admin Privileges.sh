@@ -74,7 +74,7 @@ if [[ ! -f "$privilegesLog" ]]; then
 	touch "$privilegesLog"
 fi
 
-# Redirect output to log file and stdout for jamf logging
+# Redirect output to log file and stdout for logging
 exec 1> >( tee -a "${privilegesLog}" ) 2>&1
 
 ####################################################################################################
