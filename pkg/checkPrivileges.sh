@@ -1,4 +1,5 @@
 #!/bin/bash
+#Version:2.0
 
 # Logging location
 privilegesLog="/var/log/privileges.log"
