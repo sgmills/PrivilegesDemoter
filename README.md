@@ -8,7 +8,7 @@ Once that calculation passes 15 minutes, a signal file gets created. The signal 
 
 So far we have confirmed that there is an admin user on the machine, and that user has been an admin for more than 15 minutes. The Jamf policy is where all the real work gets done. We use an IBM Notifer (or jamf helper) message to ask if the user still requires admin rights.
 
-<img width="587" alt="Privileges Demoter" src="https://user-images.githubusercontent.com/1520833/142893041-9a2383d4-f5ff-44b9-a222-69e382ee26d1.png">
+<img width="641" alt="PrivilegesDemoter" src="https://user-images.githubusercontent.com/1520833/167688261-3c2b6956-a772-4cac-8385-65efd3afc22b.png">
 
 - Clicking “Yes” resets the timer allowing the user to remain an administrator for another 15 minutes, at which point the reminder will reappear.
 - Clicking “No” revokes administrator privileges immediately. 
@@ -28,3 +28,5 @@ So far we have confirmed that there is an admin user on the machine, and that us
     3. `help_button_payload` defines the payload for the help button. Either a URL for link type, or text for infopopup type.
     4. `notification_sound` is enabled by default. Set to 0 to disable. Leave blank or set to 1 to enable.
     5. `admin_to_exclude` may be set to the username of an admin that should be excluded from the reminder and never be demoted. 
+
+        <img width="374" alt="pd_config" src="https://user-images.githubusercontent.com/1520833/167688766-ca7b3326-6a89-418c-b47c-9acc484cee5d.png">
