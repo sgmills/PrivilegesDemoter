@@ -1,4 +1,5 @@
 #!/bin/bash
+#Version:2.0
 
 # Logging location
 privilegesLog="/var/log/privileges.log"
@@ -17,7 +18,7 @@ privilegesHelperLog=$( log show --style compact --predicate 'process == "corp.sa
 
 # Check if elevation even exists and add it to the log file
 if [ "$privilegesHelperLog" ]; then
-	echo "$privilegesHelperLog" | while read line; do echo "${line} on MachineID: $UDID" >> $privilegesLog; done
+	echo "$privilegesHelperLog" | while read -r line; do echo "${line} on MachineID: $UDID" >> $privilegesLog; done
 fi
 
 # Timelimit in Seconds
@@ -34,8 +35,8 @@ timeStamp=$(date +%s)
 
 # Check if log file exists and create if needed
 if [[ ! -f ${logFile} ]]; then
-	touch "${logFile}"
-	echo ${timeStamp} > ${logFile}
+	touch ${logFile}
+	echo "${timeStamp}" > ${logFile}
 fi
 
 # Get the current user
@@ -51,9 +52,9 @@ fi
 if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
 	# Process admin time
 	oldTimeStamp=$(head -1 ${logFile})
-	echo ${timeStamp} >> ${logFile}
+	echo "${timeStamp}" >> ${logFile}
 	
-	adminTime=$((${timeStamp} - ${oldTimeStamp}))
+	adminTime=$((timeStamp - oldTimeStamp))
 	
 	# If user is admin for more than the time limit, trigger launchDaemon blog.mostlymac.privileges.demote.plist
 	# Signal file tells launchDaemon to trigger jamf policy Demote Admin Privileges
