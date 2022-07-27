@@ -34,4 +34,6 @@ fi
 install_dir=$( dirname "$0" )
 
 # Install Privileges.app in the working directory
-/usr/sbin/installer -dumplog -verbose -pkg "$install_dir"/"Privileges-1.5.3.pkg" -target "$3"
+if [[ -d "$install_dir"/"Privileges-1.5.3.pkg" ]]; then
+	/usr/sbin/installer -dumplog -verbose -pkg "$install_dir"/"Privileges-1.5.3.pkg" -target "$3"
+fi
