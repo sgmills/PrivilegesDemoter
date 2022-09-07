@@ -43,6 +43,16 @@ notification_sound="${7}"
 # Leave blank to allow demotion for all users
 admin_to_exclude="${8}"
 
+# Enter the path to IBM Notifier if it is not standard.
+# Leave blank to use default location of /Applications/IBM Notifier.app
+ibm_notifier_path="${9}"
+
+# Check for IBM Notifier path in parameter 9. If blank, set default path
+if [ ! "$ibm_notifier_path" ]; then
+	ibm_notifier_path="/Applications/IBM Notifier.app"
+fi
+
+
 ####################################################################################################
 # USE CAUTION EDITING BELOW THIS LINE
 
@@ -75,7 +85,7 @@ if [[ ! -f "$privilegesLog" ]]; then
 fi
 
 # Redirect output to log file and stdout for logging
-exec 1> >( tee -a "${privilegesLog}" ) 2>&1
+exec 1> >( tee -a "${privilegesLog}" ) 2>&1	
 
 ####################################################################################################
 # FUNCTIONS #
@@ -129,7 +139,7 @@ prompt_with_ibmNotifier () {
 	
 	# Prompt the user
 	prompt_user() {
-		button=$( "/Applications/IBM Notifier.app/Contents/MacOS/IBM Notifier" \
+		button=$( "${ibm_notifier_path}/Contents/MacOS/IBM Notifier" \
 		-type "popup" \
 		-bar_title "Privileges Reminder" \
 		-subtitle "You are currently an administrator on this device.
@@ -194,7 +204,7 @@ if [[ $currentUser != "" ]]; then
 		
 		# User with admin is logged in. Ask before removing rights
 		# Use IBM Notifier and fall back to jamfHelper if needed
-		if [[ -e "/Applications/IBM Notifier.app/" ]]; then
+		if [[ -e "${ibm_notifier_path}" ]]; then
 			prompt_with_ibmNotifier
 		else
 			prompt_with_jamfHelper
