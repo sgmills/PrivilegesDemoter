@@ -1,4 +1,4 @@
-- [Table of Contents](#privilegesdemoter)
+- [PrivilegesDemoter](#privilegesdemoter)
   * [Admin Threshold Calculation](#admin-threshold-calculation)
     + [Admin Threshold Caveats](#admin-threshold-caveats)
   * [Setup and Installation](#setup-and-installation)
@@ -44,17 +44,18 @@ The reminder notification may occur up to 5 minutes later than the admin thresho
 2. Add the [Demote Admin Privileges.sh](https://github.com/sgmills/PrivilegesDemoter/blob/main/Demote%20Admin%20Privileges.sh) script to Jamf Pro.
 3. Create a Jamf Pro policy to run "Demote Admin Privileges.sh" with custom trigger `privilegesDemote`, set it to ongoing and make it available offline. Scope to all devices with Privileges installed.
     * Note the `privilegesDemote` trigger is hard coded in the demotion LaunchDaemon. If you would like to use a different trigger, you must also edit it there.
-<img width="679" alt="Screen Shot 2021-11-22 at 11 07 31 AM" src="https://user-images.githubusercontent.com/1520833/142895481-f186ac1d-0560-49a8-943d-48bf7d543d5b.png">
+    <img width="679" alt="Screen Shot 2021-11-22 at 11 07 31 AM" src="https://user-images.githubusercontent.com/1520833/142895481-f186ac1d-0560-49a8-943d-48bf7d543d5b.png">
+
 4. Configure the options for `Demote Admin Privileges.sh` by editing the script, or using Jamf Pro script parameters.
-    * `help_button_status` should be set to 1 to enable the help button, or 0 to disable.
-    * `help_button_type` may be set to either `link` or `infopopup`
-    * `help_button_payload` defines the payload for the help button. Either a URL for `link` type, or text for `infopopup` type.
-    * `notification_sound` is enabled by default. Set to 0 to disable. Leave blank or set to 1 to enable.
-    * `admin_to_exclude` may be set to the username of an admin that should be excluded from the reminder and never be demoted.
-    * `ibm_notifier_path` may be used if you deploy IBM Notifer to a non-standard location. Set the alternate path here. Leave blank to use the default path of `/Applications/IBM Notifier.app`
+    * $4 `help_button_status` should be set to 1 to enable the help button, or 0 to disable.
+    * $5 `help_button_type` may be set to either `link` or `infopopup`
+    * $6 `help_button_payload` defines the payload for the help button. Either a URL for `link` type, or text for `infopopup` type.
+    * $7 `notification_sound` is enabled by default. Set to 0 to disable. Leave blank or set to 1 to enable.
+    * $8 `admin_to_exclude` may be set to the username of an admin that should be excluded from the reminder and never be demoted.
+    * $9 `ibm_notifier_path` may be used if you deploy IBM Notifer to a non-standard location. Set the alternate path here. Leave blank to use the default path of `/Applications/IBM Notifier.app`
         * If using an alternate path add something like the following either as a post-install script, or Files and Process > Execute Command to remove the version of IBM Notifier deployed by PrivilegesDemoter. 
             * This will delete the app deployed by PrivilegesDemoter `rm -r "/Applications/IBM Notifier.app"`
-            * This will move the version of IBM Notifer deployed by PrivilegesDemoter to the /Applicatons/Utilities folder `mv "/Applications/IBM Notifier.app" "/Applications/Utilities/IBM Notifier.app"` 
+            * This will move the version of IBM Notifer deployed by PrivilegesDemoter to the /Applicatons/Utilities folder `mv "/Applications/IBM Notifier.app" "/Applications/Utilities/IBM Notifier.app"`
 
         <img width="374" alt="pd_config" src="https://user-images.githubusercontent.com/1520833/167688766-ca7b3326-6a89-418c-b47c-9acc484cee5d.png">
         
