@@ -69,6 +69,11 @@ The following configuation profiles are optional, but reccomended.
 **Available for:** macOS 13 and later. </br>
 **Description:** In macOS 13 Ventura and later users are able to toggle background services (LaunchDaemons) on and off in the System Settings GUI. It is reccomended to disable this ability so that the user cannot turn off the demotion reminders.
 
+## Updating
+When updating from any older version to a newer version of PrivilegesDemoter you may safely install the new package over the old one.
+
+It is important to always update the `Demote Admin Privileges` script within your MDM server each time you update the install package in order to take advantage of any new features and ensure proper operation.
+
 ## Logging
 Events from SAP Privileges are gathered alongside each PrivilegesDemoter decision made by the user and logged in `/var/log/privileges.log`
 
