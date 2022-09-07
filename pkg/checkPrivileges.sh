@@ -1,5 +1,5 @@
 #!/bin/bash
-#Version:2.0
+#Version:2.1
 
 # Logging location
 privilegesLog="/var/log/privileges.log"
@@ -21,8 +21,17 @@ if [ "$privilegesHelperLog" ]; then
 	echo "$privilegesHelperLog" | while read -r line; do echo "${line} on MachineID: $UDID" >> $privilegesLog; done
 fi
 
-# Timelimit in Seconds
-timeLimit="900"
+# If DockToggleTimeout is set within SAP Privileges prefernces, use that value.
+# Otherwise, use default of 15 minutes
+privilegesPreferences="corp.sap.privileges"
+keyName="DockToggleTimeout"
+readPrivilegesPreferences=$( defaults read $privilegesPreferences $keyName 2>/dev/null )
+
+if [ "$readPrivilegesPreferences" ]; then
+	timeLimit=$((readPrivilegesPreferences * 60))
+else
+	timeLimit=900
+fi
 
 # Signal file, must match blog.mostlymac.privileges.demote.plist -> watchpaths
 signalFile="/tmp/privilegesDemote"
