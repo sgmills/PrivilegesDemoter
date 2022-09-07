@@ -22,9 +22,9 @@ if [ "$privilegesHelperLog" ]; then
 fi
 
 # If DockToggleTimeout is set within SAP Privileges preferences, use that value.
-privilegesPreferences="corp.sap.privileges"
+privilegesPreferences="/Library/Managed Preferences/corp.sap.privileges.plist"
 keyName="DockToggleTimeout"
-readPrivilegesPreferences=$( defaults read $privilegesPreferences $keyName 2>/dev/null )
+readPrivilegesPreferences=$( defaults read "$privilegesPreferences" "$keyName" 2>/dev/null )
 
 # Check for preferences. If not present or set to never, use default value
 if [ ! "$readPrivilegesPreferences" ] || [ "$readPrivilegesPreferences" = 0 ]; then
