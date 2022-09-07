@@ -54,7 +54,7 @@ UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $
 
 # If current user is excluded from demotion, reset timer and exit
 if [[ "$currentUser" == "$admin_to_exclude" ]]; then
-	echo "Admin user logged in. Will not perform demotion..."
+	echo "Excluded admin user logged in. Will not perform demotion..."
 	# Reset timer and exit 0
 	rm /tmp/privilegesCheck &> /dev/null
 	exit 0
@@ -240,6 +240,14 @@ else
 	# Get the last user if current user is not logged in
 	lastUser=$( defaults read /Library/Preferences/com.apple.loginwindow lastUserName )
 	echo "$stamp Info: No current user. Last user on MachineID: $UDID was $lastUser"
+	
+	# If last user is excluded from demotion, reset timer and exit
+	if [[ "$lastUser" == "$admin_to_exclude" ]]; then
+		echo "Last user was excluded admin. Will not perform demotion..."
+		# Reset timer and exit 0
+		rm /tmp/privilegesCheck &> /dev/null
+		exit 0
+	fi
 	
 	# If last user is an admin, remove rights silently
 	if /usr/sbin/dseditgroup -o checkmember -m "$lastUser" admin | grep -q "yes"; then
