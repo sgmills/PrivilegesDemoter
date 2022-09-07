@@ -21,8 +21,19 @@ if [ "$privilegesHelperLog" ]; then
 	echo "$privilegesHelperLog" | while read -r line; do echo "${line} on MachineID: $UDID" >> $privilegesLog; done
 fi
 
-# Timelimit in Seconds
-timeLimit="900"
+
+# Get or SetTimelimit in Seconds
+privilegesPreferences="corp.sap.privileges"
+keyName="DockToggleTimeout"
+readprivilegesPreferences="defaults read $privilegesPreferences $keyName"
+
+if ($readprivilegesPreferences) > /dev/null 2>&1; then
+	timeset=$($readprivilegesPreferences)
+	timeLimit=$((timeset * 60))
+else
+	timeLimit=1200
+fi
+
 
 # Signal file, must match blog.mostlymac.privileges.demote.plist -> watchpaths
 signalFile="/tmp/privilegesDemote"
