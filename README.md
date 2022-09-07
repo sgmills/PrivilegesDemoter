@@ -1,3 +1,12 @@
+- [Table of Contents](#privilegesdemoter)
+  * [Admin Threshold Calculation](#admin-threshold-calculation)
+    + [Admin Threshold Caveats](#admin-threshold-caveats)
+  * [Setup and Installation](#setup-and-installation)
+    + [Configuraton Profiles](#configuraton-profiles)
+  * [Updating](#updating)
+  * [Logging](#logging)
+  * [Testing](#testing)
+
 # PrivilegesDemoter
 
 While the [SAP Privileges application](https://github.com/SAP/macOS-enterprise-privileges) is excellent at its intended function, you may want some help encouraging users to act as an administrator only when required (instead of setting themselves as an admin and never looking back). Additionally, you may want some way of logging who is using admin privileges for an extended period of time and how often. That's where PrivilegesDemoter comes in.
