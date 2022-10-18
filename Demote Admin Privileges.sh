@@ -22,7 +22,7 @@
 # All variables may be set as parameters if using Jamf Pro
 # If not using Jamf Pro, set the values here
 
-# Set to "1" in order to enalbe the help button
+# Set to "1" in order to enable the help button
 # Leave blank or set to "0" to disable the help button.
 help_button_status="${4}"
 
