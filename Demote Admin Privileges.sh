@@ -56,7 +56,7 @@ if [ ! "$ibm_notifier_path" ]; then
 	ibm_notifier_path="/Applications/IBM Notifier.app"
 fi
 
-# Check for IBM Notifier binary name in parameter 10. If blank, set default path
+# Check for IBM Notifier binary in parameter 10. If blank, set default binary
 if [ ! "$ibm_notifier_binary" ]; then
 	ibm_notifier_binary="IBM Notifier"
 fi
