@@ -47,9 +47,19 @@ admin_to_exclude="${8}"
 # Leave blank to use default location of /Applications/IBM Notifier.app
 ibm_notifier_path="${9}"
 
+
+# Enter the component name used in IBM Notifier if it is not standard.
+# Leave blank to use default name of 'IBM Notifier'
+ibm_notifier_component_name}="${10}"
+
 # Check for IBM Notifier path in parameter 9. If blank, set default path
 if [ ! "$ibm_notifier_path" ]; then
 	ibm_notifier_path="/Applications/IBM Notifier.app"
+fi
+
+# Check for IBM Notifier component name in parameter 10. If blank, set default path
+if [ ! "$ibm_notifier_component_name" ]; then
+	ibm_notifier_component_name="IBM Notifier"
 fi
 
 
@@ -139,7 +149,7 @@ prompt_with_ibmNotifier () {
 	
 	# Prompt the user
 	prompt_user() {
-		button=$( "${ibm_notifier_path}/Contents/MacOS/IBM Notifier" \
+		button=$( "${ibm_notifier_path}/Contents/MacOS/${ibm_notifier_component_name}" \
 		-type "popup" \
 		-bar_title "Privileges Reminder" \
 		-subtitle "You are currently an administrator on this device.
