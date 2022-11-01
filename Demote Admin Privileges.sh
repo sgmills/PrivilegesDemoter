@@ -50,7 +50,7 @@ ibm_notifier_path="${9}"
 
 # Enter the binary name used in IBM Notifier if it is not standard.
 # Leave blank to use default name of 'IBM Notifier'
-ibm_notifier_binary_name}="${10}"
+ibm_notifier_binary_name="${10}"
 
 # Check for IBM Notifier path in parameter 9. If blank, set default path
 if [ ! "$ibm_notifier_path" ]; then
