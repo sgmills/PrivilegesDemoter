@@ -62,9 +62,28 @@ currentUser=$( scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ && ! /
 # Get machine UDID
 UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}' )
 
+####################################################################################################
+
+# Read comma separated list of excluded admins into array
+IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
+
+# Add always excluded users to array
+excludedUsers+=("root" "_mbsetupuser")
+
+# Function to check if array contains a user
+containsUser () {
+	local e
+	for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 1; done
+	return 0
+}
+
+# Use function to check if current user is excluded from demotion
+containsUser "$currentUser" "${excludedUsers[@]}"
+excludedUserLoggedIn="$?"
+
 # If current user is excluded from demotion, reset timer and exit
-if [[ "$currentUser" == "$admin_to_exclude" ]]; then
-	echo "Excluded admin user logged in. Will not perform demotion..."
+if [[ "$excludedUserLoggedIn" = 1 ]]; then
+	echo "Excluded admin user $currentUser logged in. Will not perform demotion..."
 	# Reset timer and exit 0
 	rm /tmp/privilegesCheck &> /dev/null
 	exit 0
@@ -85,7 +104,7 @@ if [[ ! -f "$privilegesLog" ]]; then
 fi
 
 # Redirect output to log file and stdout for logging
-exec 1> >( tee -a "${privilegesLog}" ) 2>&1	
+exec 1> >( tee -a "${privilegesLog}" ) 2>&1
 
 ####################################################################################################
 # FUNCTIONS #
@@ -247,13 +266,17 @@ if [[ $currentUser != "" ]]; then
 		echo "$stamp Info: $currentUser is not an admin on MachineID: $UDID."
 	fi
 else
-	# Get the last user if current user is not logged in
+	# Get the last user if no user is logged in
 	lastUser=$( defaults read /Library/Preferences/com.apple.loginwindow lastUserName )
 	echo "$stamp Info: No current user. Last user on MachineID: $UDID was $lastUser"
 	
+	# Use function to check if last user is excluded from demotion
+	containsUser "$lastUser" "${excludedUsers[@]}"
+	excludedUserLoggedIn="$?"
+	
 	# If last user is excluded from demotion, reset timer and exit
-	if [[ "$lastUser" == "$admin_to_exclude" ]]; then
-		echo "Last user was excluded admin. Will not perform demotion..."
+	if [[ "$excludedUserLoggedIn" = 1 ]]; then
+		echo "Last user $lastUser was an excluded admin. Will not perform demotion..."
 		# Reset timer and exit 0
 		rm /tmp/privilegesCheck &> /dev/null
 		exit 0
