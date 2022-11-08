@@ -4,57 +4,72 @@
 #
 # SCRIPT: Demote Admin Privileges
 # AUTHOR: Sam Mills (github.com/sgmills)
-# DATE:   09 May 2022
-# REV:    2.0
+# DATE:   08 November 2022
+# REV:    3.0
 #
 ####################################################################################################
 #
 # Description
-#   This script is triggered from your MDM by the PrivilegedDemoter tool. If a user has been admin
-#	for more than 15 minutes, they will be reminded to use standard user rights and offered the
-#	option to remain admin or demote themselves.
+#   This tool reminds users to operate as a standard user. If a given user has had admin privileges
+#	for longer than a specific threshold, they will be reminded to use standard user rights. Users 
+#	are offered the option to remain admin or demote themselves.
 #
 #	Events to elevate privileges or demote are logged at /var/log/privileges.log.
 #
 ####################################################################################################
-# EDITABLE VARIABLES #
+# LOG SETUP #
 
-# All variables may be set as parameters if using Jamf Pro
-# If not using Jamf Pro, set the values here
+# Create stamp for logging
+stamp="$(date +"%Y-%m-%d %H:%M:%S%z") blog.mostlymac.privileges.demoter"
 
-# Set to "1" in order to enable the help button
-# Leave blank or set to "0" to disable the help button.
-help_button_status="${4}"
+# Logging location
+privilegesLog="/var/log/privileges.log"
 
-# Set the help button type
-# link: trigger the url defined in the payload
-# infopopup: shows an info pop-up with text
-help_button_type="${5}"
-
-# Set the help button payload
-# A URL for link type or text for infopopup type
-help_button_payload="${6}"
-
-# Set to 0 in order to disable the notification sound
-# Leave blank or set to 1 to enable notification sounds
-notification_sound="${7}"
-
-# Enter an administrator's username to exclude from demotion
-# Leave blank to allow demotion for all users
-admin_to_exclude="${8}"
-
-# Enter the path to IBM Notifier if it is not standard.
-# Leave blank to use default location of /Applications/IBM Notifier.app
-ibm_notifier_path="${9}"
-
-# Check for IBM Notifier path in parameter 9. If blank, set default path
-if [ ! "$ibm_notifier_path" ]; then
-	ibm_notifier_path="/Applications/IBM Notifier.app"
+# Check if log exists and create if needed
+if [[ ! -f "$privilegesLog" ]]; then
+	touch "$privilegesLog"
 fi
 
+# Redirect output to log file and stdout for logging
+exec 1> >( tee -a "${privilegesLog}" ) 2>&1
 
 ####################################################################################################
-# USE CAUTION EDITING BELOW THIS LINE
+# SET VARIABLES #
+
+# Managed Preferences Plist
+pdPrefs="/Library/Managed Preferences/blog.mostlymac.privilegesdemoter.plist"
+
+# Get help button status
+help_button_status="$( defaults read "$pdPrefs" HelpButtonStatus 2>/dev/null )"
+
+# Get the help button type
+help_button_type="$( defaults read "$pdPrefs" HelpButtonType 2>/dev/null )"
+
+# Get the help button payload
+help_button_payload="$( defaults read "$pdPrefs" HelpButtonPayload 2>/dev/null )"
+
+# Get notification sound setting
+notification_sound="$( defaults read "$pdPrefs" NotificationSound 2>/dev/null )"
+
+# Get list of excluded admins
+admin_to_exclude="$( defaults read "$pdPrefs" AdminsToExclude 2>/dev/null )"
+
+# Check for IBM Notifier path. Set to default if not found
+if [[ ! $( defaults read "$pdPrefs" IBMNotifierPath 2>/dev/null ) ]]; then
+	ibm_notifier_path="/Applications/IBM Notifier.app"
+else
+	ibm_notifier_path="$( defaults read "$pdPrefs" IBMNotifierPath )"
+fi
+
+# Check for IBM Notifier custom binary name. Set to default if not found
+if [[ ! $( defaults read "$pdPrefs" IBMNotifierBinary 2>/dev/null ) ]]; then
+	ibm_notifier_binary="IBM Notifier"
+else
+	ibm_notifier_binary="$( defaults read "$pdPrefs" IBMNotifierBinary )"
+fi
+
+####################################################################################################
+# SET USER AND DEVICE INFO #
 
 # Get the current user
 currentUser=$( scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ && ! /loginwindow/ { print $3 }' )
@@ -63,6 +78,7 @@ currentUser=$( scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ && ! /
 UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}' )
 
 ####################################################################################################
+# SET EXCLUDED USERS #
 
 # Read comma separated list of excluded admins into array
 IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
@@ -81,6 +97,9 @@ containsUser () {
 containsUser "$currentUser" "${excludedUsers[@]}"
 excludedUserLoggedIn="$?"
 
+####################################################################################################
+# STOP HERE AND EXIT IF EXCLUDED USER IS LOGGED IN #
+
 # If current user is excluded from demotion, reset timer and exit
 if [[ "$excludedUserLoggedIn" = 1 ]]; then
 	echo "Excluded admin user $currentUser logged in. Will not perform demotion..."
@@ -88,23 +107,6 @@ if [[ "$excludedUserLoggedIn" = 1 ]]; then
 	rm /tmp/privilegesCheck &> /dev/null
 	exit 0
 fi
-
-####################################################################################################
-# LOG SETUP #
-
-# Create stamp for logging
-stamp="$(date +"%Y-%m-%d %H:%M:%S%z") blog.mostlymac.privileges.demoter"
-
-# Logging location
-privilegesLog="/var/log/privileges.log"
-
-# Check if log exists and create if needed
-if [[ ! -f "$privilegesLog" ]]; then
-	touch "$privilegesLog"
-fi
-
-# Redirect output to log file and stdout for logging
-exec 1> >( tee -a "${privilegesLog}" ) 2>&1
 
 ####################################################################################################
 # FUNCTIONS #
@@ -158,7 +160,7 @@ prompt_with_ibmNotifier () {
 	
 	# Prompt the user
 	prompt_user() {
-		button=$( "${ibm_notifier_path}/Contents/MacOS/IBM Notifier" \
+		button=$( "${ibm_notifier_path}/Contents/MacOS/${ibm_notifier_binary}" \
 		-type "popup" \
 		-bar_title "Privileges Reminder" \
 		-subtitle "You are currently an administrator on this device.
