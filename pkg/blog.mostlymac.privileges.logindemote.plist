@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- silently demotes users on login -->
+	<key>Label</key>
+	<string>blog.mostlymac.privileges.logindemote</string>
+	<key>Program</key>
+	<string>/path/to/PrivilegesDemoter.sh --demote-silent</string>
+	<key>RunAtLoad</key>
+	<true/>
+</dict>
+</plist>
