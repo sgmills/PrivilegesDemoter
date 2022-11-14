@@ -38,6 +38,8 @@
 								<false/>
 								<key>JamfTrigger</key>
 								<string>privilegesDemote</string>
+								<key>Standalone</key>
+								<false/>
 							</dict>
 						</dict>
 					</array>

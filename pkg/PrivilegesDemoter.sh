@@ -51,6 +51,9 @@ silent="$( defaults read "$pdPrefs" Silent 2>/dev/null )"
 # Get setting for running from jamf
 jamf="$( defaults read "$pdPrefs" Jamf 2>/dev/null )"
 
+# Get setting for standalone mode without SAP Privileges
+standalone="$( defaults read "$pdPrefs" Standalone 2>/dev/null )"
+
 # Check for jamf trigger. Set to default if not found
 if [[ ! $( defaults read "$pdPrefs" JamfTrigger 2>/dev/null ) ]]; then
 	jamf_trigger="privilegesDemote"
@@ -87,6 +90,9 @@ sapDockToggleTimeout=$( defaults read "$sapPrivilegesPreferences" DockToggleTime
 
 # Log file which contains the timestamps of the last runs
 checkFile="/tmp/privilegesCheck"
+
+# Location of PrivilegesCLI
+privilegesCLI="/Applications/Privileges.app/Contents/Resources/PrivilegesCLI"
 
 ####################################################################################################
 # SET USER AND DEVICE INFO #
@@ -129,6 +135,19 @@ if [[ "$excludedUserLoggedIn" = 1 ]]; then
 fi
 
 ####################################################################################################
+# THRESHOLD SETUP #
+
+# Check for PrivilegesDemoter admin_threshold or SAP Privileges DockTileTimeout (in that order)
+# If keys are not present or set to never, use default value of 15 minutes
+if [ "$admin_threshold" ] && [ "$admin_threshold" != 0 ]; then
+	timeLimit=$((admin_threshold * 60))
+elif [ "$sapDockToggleTimeout" ] && [ "$sapDockToggleTimeout" != 0 ]; then
+	timeLimit=$((sapDockToggleTimeout * 60))
+else
+	timeLimit=900
+fi
+
+####################################################################################################
 # FUNCTIONS #
 
 # Function to display help message with usage options
@@ -148,20 +167,14 @@ usage () {
 # Function to get elapsed time since last run
 adminTime () {
 	if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
-		# Get the current time
-		currentTime=$(date +%s)
-		
-		# Check if log file exists and create if needed
-		if [[ ! -f ${checkFile} ]]; then
-			touch ${checkFile}
-			echo "${currentTime}" > ${checkFile}
-		fi
+		# Use function to initiate timestamp
+		initTimestamp
 		
 		# Get the start time
 		startTime=$( head -n 1 "$checkFile" )
 		
 		# Get the elapsed time
-		elapsedTime=$((currentTime - startTime))
+		elapsedTime=$((timeStamp - startTime))
 		
 		convertAndPrintSeconds() {
 			local totalSeconds=$1;
@@ -181,6 +194,30 @@ adminTime () {
 	exit
 }
 
+# Functon to elevate the current user
+elevate () {
+	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
+		/usr/sbin/dseditgroup -o edit -a "$currentUser" -t user admin
+		initTimestamp
+		pdLog "Status: $currentUser is now an admin user on MachineID: $UDID."
+	else
+		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --add &> /dev/null
+		initTimestamp
+		pdLog "Status: $currentUser is now an admin user on MachineID: $UDID."
+	fi
+	
+	exit
+}
+
+# Function to demote the current user
+demote () {
+	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
+		/usr/sbin/dseditgroup -o edit -d "$currentUser" -t user admin
+	else
+		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --remove &> /dev/null
+	fi
+}
+
 # Function to get the last 5 minutes of logs from SAP privileges helper
 sapPrivilegesLogger () {
 	# The Privileges.app elevation event is not logged elsewhere, so this should capture it
@@ -189,6 +226,18 @@ sapPrivilegesLogger () {
 	# Check if elevation event exists and add it to the log file
 	if [ "$privilegesHelperLog" ]; then
 		echo "$privilegesHelperLog" | while read -r line; do echo "${line} on MachineID: $UDID" >> $privilegesLog; done
+	fi
+}
+
+# Function to initiate timestamp for admin calcualtions
+initTimestamp () {
+	# Current timestamp
+	timeStamp=$(date +%s)
+	
+	# Check if log file exists and create if needed
+	if [[ ! -f ${checkFile} ]]; then
+		touch ${checkFile}
+		echo "${timeStamp}" > ${checkFile}
 	fi
 }
 
@@ -207,8 +256,8 @@ confirmPrivileges () {
 			pdLog "Error: Could not demote ${1} to standard on MachineID: $UDID."
 		else
 			# Successfully demoted with dseditgroup. Need to update dock tile
-			# If running, reload dock to display correct privileges tile
-			if /usr/bin/pgrep Dock -gt 0; then
+			# If running, and not in standalone mode, reload dock to display correct tile
+			if [[ $(/usr/bin/pgrep Dock) -gt 0 ]] && [[ "$standalone" = 0 ]]; then
 				/usr/bin/killall Dock
 			fi
 			
@@ -299,8 +348,8 @@ demoteUser () {
 			if [[ $silent = 1 ]]; then
 				# Revoke rights with PrivilegesCLI silently
 				pdLog "Info: Silent option used. Not notifying user and removing rights for $currentUser on MachineID: $UDID now."
-				launchctl asuser "$currentUserID" sudo -u "$currentUser" "/Applications/Privileges.app/Contents/Resources/PrivilegesCLI" --remove &> /dev/null
-				sleep 1
+				# Use function to demote user
+				demote
 				
 				# Run confirm privileges function with current user.
 				confirmPrivileges "$currentUser"
@@ -320,8 +369,8 @@ demoteUser () {
 			if [[ $buttonClicked = 0 ]]; then
 				# Revoke rights with PrivilegesCLI
 				pdLog "Decision: $currentUser no longer needs admin rights. Removing rights on MachineID: $UDID now."
-				launchctl asuser "$currentUserID" sudo -u "$currentUser" "/Applications/Privileges.app/Contents/Resources/PrivilegesCLI" --remove &> /dev/null
-				sleep 1
+				# Use function to demote user
+				demote
 				
 				# Run confirm privileges function with current user.
 				confirmPrivileges "$currentUser"
@@ -337,8 +386,8 @@ demoteUser () {
 			# If timeout occured, remove admin rights
 			elif [[ $buttonClicked = 4 ]]; then
 				pdLog "Decision: Timeout occurred. Removing admin rights for $currentUser on MachineID: $UDID now."
-				launchctl asuser "$currentUserID" sudo -u "$currentUser" "/Applications/Privileges.app/Contents/Resources/PrivilegesCLI" --remove &> /dev/null
-				sleep 1
+				# Use function to demote user
+				demote
 				
 				# Run confirm privileges function with current user.
 				confirmPrivileges "$currentUser"
@@ -382,32 +431,15 @@ checkAdminThreshold () {
 }
 
 ####################################################################################################
-# THRESHOLD SETUP #
-
-# Check for preferences. If timeout is not present or set to never, use default value of 15 minutes
-if [ "$admin_threshold" ] && [ "$admin_threshold" != 0 ]; then
-	timeLimit=$((admin_threshold * 60))
-elif [ "$sapDockToggleTimeout" ] && [ "$sapDockToggleTimeout" != 0 ]; then
-	timeLimit=$((sapDockToggleTimeout * 60))
-else
-	timeLimit=900
-fi
-
-# Current timestamp
-timeStamp=$(date +%s)
-
-# Check if log file exists and create if needed
-if [[ ! -f ${checkFile} ]]; then
-	touch ${checkFile}
-	echo "${timeStamp}" > ${checkFile}
-fi
-
-####################################################################################################
-# DO THE WORK #
+# GET INPUTS #
 
 # Get inputs
 while test $# -gt 0; do
 	case "$1" in
+		--elevate)
+			# Run function to elevate the user now
+			elevate
+		;;
 		--demote)
 			# Run function to demote the user now
 			demoteUser
@@ -429,6 +461,12 @@ while test $# -gt 0; do
 	esac
 	shift
 done
+
+####################################################################################################
+# DO THE WORK #
+
+# Use function to initiate timestamp
+initTimestamp
 
 # Use function to get the last 5 minutes of logs from SAP privileges helper
 sapPrivilegesLogger
