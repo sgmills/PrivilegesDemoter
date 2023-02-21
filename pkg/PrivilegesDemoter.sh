@@ -2,6 +2,14 @@
 #Version:3.0
 
 ####################################################################################################
+# MUST BE RUN AS ROOT #
+
+if [ "$EUID" -ne 0 ]; then 
+	echo "This script must be run as root!"
+	exit
+fi
+
+####################################################################################################
 # LOG SETUP #
 
 # All privilege events logging location
@@ -39,6 +47,12 @@ help_button_payload="$( defaults read "$pdPrefs" HelpButtonPayload 2>/dev/null )
 # Get notification sound setting
 notification_sound="$( defaults read "$pdPrefs" NotificationSound 2>/dev/null )"
 
+# Are we using IBM Notifer?
+ibm_notifier="$( defaults read "$pdPrefs" IBMNotifier 2>/dev/null )"
+
+# Are we using Swift Dialog?
+swift_dialog="$( defaults read "$pdPrefs" SwiftDialog 2>/dev/null )"
+
 # Get list of excluded admins
 admin_to_exclude="$( defaults read "$pdPrefs" AdminsToExclude 2>/dev/null )"
 
@@ -49,7 +63,7 @@ admin_threshold="$( defaults read "$pdPrefs" AdminThreshold 2>/dev/null )"
 silent="$( defaults read "$pdPrefs" Silent 2>/dev/null )"
 
 # Get setting for running from jamf
-jamf="$( defaults read "$pdPrefs" Jamf 2>/dev/null )"
+jamf="$( defaults read "$pdPrefs" UseJamfPolicy 2>/dev/null )"
 
 # Get setting for standalone mode without SAP Privileges
 standalone="$( defaults read "$pdPrefs" Standalone 2>/dev/null )"
@@ -83,6 +97,9 @@ if [[ ! $( defaults read "$pdPrefs" IBMNotifierBinary 2>/dev/null ) ]]; then
 else
 	ibm_notifier_binary="$( defaults read "$pdPrefs" IBMNotifierBinary )"
 fi
+
+# Set the defautl path to swift dialog
+swift_dialog_path="/usr/local/bin/dialog"
 
 # Get DockToggleTimeout from SAP Privileges preferences (if it exists)
 sapPrivilegesPreferences="/Library/Managed Preferences/corp.sap.privileges.plist"
@@ -155,10 +172,13 @@ usage () {
 	echo ""
 	echo "   Usage: ./PrivilegesDemoter.sh [--options]"
 	echo ""
-	echo "   --demote         Triggers PrivilegesDemoter to demote the current user"
-	echo "   --demote-silent  Demotes the current user silently"
-	echo "   --admin-time     Displays elapsed time since last PrivilegesDemoter run."
-	echo "   --help           Displays this message"
+	echo "   [no flags]       If the current user has passed the admin threshold, offer to demote them."
+	echo "   --elevate        Elevate the current user to administrator"
+	echo "   --demote         Demote the current user to standard"
+	echo "   --demote-silent  Demote the current user to standard silently"
+	echo "   --status         Displays the current user's privileges"
+	echo "   --admin-time     Display elapsed time since last PrivilegesDemoter run"
+	echo "   --help           Display this message"
 	echo ""
 	
 	exit
@@ -188,7 +208,7 @@ adminTime () {
 		convertAndPrintSeconds "$elapsedTime"
 	else
 		# User is not admin.
-		echo "Current user, $currentUser, is not an admin."
+		echo "$currentUser is not an administrator. Nothing to do."
 	fi
 	
 	exit
@@ -197,13 +217,18 @@ adminTime () {
 # Functon to elevate the current user
 elevate () {
 	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
-		/usr/sbin/dseditgroup -o edit -a "$currentUser" -t user admin
-		initTimestamp
-		pdLog "Status: $currentUser is now an admin user on MachineID: $UDID."
+		if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
+			pdLog "Status: User $currentUser already has the requested privileges. Nothing to do."
+			echo "$currentUser is already an administrator. Nothing to do."
+		else
+			/usr/sbin/dseditgroup -o edit -a "$currentUser" -t user admin
+			initTimestamp
+			pdLog "Status: $currentUser is now an admin user on MachineID: $UDID."
+			echo "$currentUser now has administrator rights."
+		fi
 	else
-		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --add &> /dev/null
+		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --add
 		initTimestamp
-		pdLog "Status: $currentUser is now an admin user on MachineID: $UDID."
 	fi
 	
 	exit
@@ -213,10 +238,28 @@ elevate () {
 demote () {
 	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
 		/usr/sbin/dseditgroup -o edit -d "$currentUser" -t user admin
+		echo "$currentUser is now a standard user."
+		
 	else
 		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --remove &> /dev/null
 	fi
 }
+
+# Functon to get the current user status
+status () {
+	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
+		if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
+			echo "User $currentUser has administrator rights."
+		else
+			echo "User $currentUser has standard user rights."
+		fi
+	else
+		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --status
+	fi
+	
+	exit
+}
+
 
 # Function to get the last 5 minutes of logs from SAP privileges helper
 sapPrivilegesLogger () {
@@ -231,11 +274,11 @@ sapPrivilegesLogger () {
 
 # Function to initiate timestamp for admin calcualtions
 initTimestamp () {
-	# Current timestamp
-	timeStamp=$(date +%s)
-	
 	# Check if log file exists and create if needed
 	if [[ ! -f ${checkFile} ]]; then
+		# Get current timestamp
+		timeStamp=$(date +%s)
+		# Create file with current timestamp
 		touch ${checkFile}
 		echo "${timeStamp}" > ${checkFile}
 	fi
@@ -309,6 +352,38 @@ prompt_with_ibmNotifier () {
 	buttonClicked=$( prompt_user )
 }
 
+# Function to prompt with Swift Dialog
+prompt_with_swiftDialog () {
+	
+	# If help button is enabled, set message and payload accordingly
+	if [[ $help_button_status = 1 ]]; then
+		if [[ $help_button_type == "infopopup" ]]; then
+			help_info=("--helpmessage" "$help_button_payload")
+		elif [[ $help_button_type == "link" ]]; then
+			help_info=("--infobuttontext" "More Info" "--infobuttonaction" "$help_button_payload")
+		fi
+	fi
+	
+	# Prompt the user
+	prompt_user() {
+		button=$( "${swift_dialog_path}" \
+		--title "Privileges Reminder" \
+		--message "$main_text" \
+		--icon "/Applications/Privileges.app/Contents/Resources/AppIcon.icns" \
+		--button1text No \
+		--button2text Yes \
+		"${help_info[@]}" \
+		--timer 120 \
+		--hidetimerbar \
+		--small )
+		
+		echo "$?"
+	}
+	
+	# Get the user's response
+	buttonClicked=$( prompt_user )
+}
+
 # Function to prompt with Jamf Helper
 prompt_with_jamfHelper () {
 	
@@ -357,9 +432,11 @@ demoteUser () {
 				exit
 				
 			else
-				# Notify the user. Use IBM Notifier and fall back to jamfHelper if needed
-				if [[ -e "${ibm_notifier_path}" ]]; then
+				# Notify the user. Use app that user defined and fall back to what is available if needed
+				if [[ $ibm_notifier = 1 ]] && [[ -e "${ibm_notifier_path}" ]]; then
 					prompt_with_ibmNotifier
+				elif [[ $swift_dialog = 1 ]] && [[ -e "${swift_dialog_path}" ]]; then
+					prompt_with_swiftDialog 
 				else
 					prompt_with_jamfHelper
 				fi
@@ -453,6 +530,10 @@ while test $# -gt 0; do
 		--admin-time)
 			# Run function to display how long user has had admin rights
 			adminTime
+		;;
+		--status)
+			# Run function to display user status
+			status
 		;;
 		--help|-*)
 			# Display usage dialog

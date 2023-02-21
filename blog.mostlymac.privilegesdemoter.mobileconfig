@@ -34,12 +34,14 @@
 								<false/>
 								<key>MainText</key>
 								<string>You are currently an administrator on this device.\n\nYou probably shouldn't do that, bro.\n\nDo you still require super-duper privileges?</string>
-								<key>Jamf</key>
+								<key>UseJamfPolicy</key>
 								<false/>
 								<key>JamfTrigger</key>
 								<string>privilegesDemote</string>
 								<key>Standalone</key>
 								<false/>
+								<key>IBMNotifier</key>
+								<true/>
 							</dict>
 						</dict>
 					</array>
