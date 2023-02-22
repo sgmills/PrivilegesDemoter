@@ -98,7 +98,7 @@ else
 	ibm_notifier_binary="$( defaults read "$pdPrefs" IBMNotifierBinary )"
 fi
 
-# Set the defautl path to swift dialog
+# Set the default path to swift dialog
 swift_dialog_path="/usr/local/bin/dialog"
 
 # Get DockToggleTimeout from SAP Privileges preferences (if it exists)
@@ -214,7 +214,7 @@ adminTime () {
 	exit
 }
 
-# Functon to elevate the current user
+# Function to elevate the current user
 elevate () {
 	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
 		if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
@@ -245,7 +245,7 @@ demote () {
 	fi
 }
 
-# Functon to get the current user status
+# Function to get the current user status
 status () {
 	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
 		if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
@@ -272,7 +272,7 @@ sapPrivilegesLogger () {
 	fi
 }
 
-# Function to initiate timestamp for admin calcualtions
+# Function to initiate timestamp for admin calculations
 initTimestamp () {
 	# Get current timestamp
 	timeStamp=$(date +%s)
@@ -314,7 +314,7 @@ confirmPrivileges () {
 		pdLog "Status: ${1} is now a standard user on MachineID: $UDID."
 	fi
 	
-	# Clean up privilegegs check log file to reset timer
+	# Clean up privileges check log file to reset timer
 	rm "$checkFile" &> /dev/null
 }
 
@@ -443,7 +443,7 @@ demoteUser () {
 				fi
 			fi
 			
-			# If the user clicked NO (button 0), remove admin rights immidiately
+			# If the user clicked NO (button 0), remove admin rights immediately
 			if [[ $buttonClicked = 0 ]]; then
 				# Revoke rights with PrivilegesCLI
 				pdLog "Decision: $currentUser no longer needs admin rights. Removing rights on MachineID: $UDID now."
@@ -458,10 +458,10 @@ demoteUser () {
 				pdLog "Decision: $currentUser says they still need admin rights on MachineID: $UDID."
 				pdLog "Status: Resetting timer and allowing $currentUser to remain an admin on MachineID: $UDID."
 				
-				# Clean up privilegegs check file to reset timer
+				# Clean up privileges check file to reset timer
 				rm "$checkFile" &> /dev/null
 				
-			# If timeout occured, remove admin rights
+			# If timeout occurred, remove admin rights
 			elif [[ $buttonClicked = 4 ]]; then
 				pdLog "Decision: Timeout occurred. Removing admin rights for $currentUser on MachineID: $UDID now."
 				# Use function to demote user
@@ -553,7 +553,7 @@ initTimestamp
 # Use function to get the last 5 minutes of logs from SAP privileges helper
 sapPrivilegesLogger
 
-# Use function to determin if logged in user has passed the threshold
+# Use function to determine if logged in user has passed the threshold
 checkAdminThreshold
 passedThreshold="$?"
 
@@ -563,7 +563,7 @@ if [[ "$passedThreshold" = 1 ]]; then
 	if [[ "$jamf" = 1 ]]; then
 		/usr/local/bin/jamf policy -event "$jamf_trigger"
 	else
-		# Use funciton to demote user
+		# Use function to demote user
 		demoteUser
 	fi
 fi
