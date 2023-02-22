@@ -77,15 +77,11 @@ fi
 
 # Get main text for notifications. Set to default if not found
 if [[ ! $( defaults read "$pdPrefs" MainText 2>/dev/null ) ]]; then
-	main_text="You are currently an administrator on this device.
-
-It is recommended to operate as a standard user whenever possible.
-
-Do you still require elevated privileges?"
+	main_text=$( printf "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?" )
 else
 	get_text="$( defaults read "$pdPrefs" MainText 2>/dev/null )"
 	# Strip out extra slash in new line characters
-	main_text="${get_text//'\\n'/\n}"
+	main_text=$( printf "${get_text//'\\n'/\n}" )
 fi
 
 # Check for IBM Notifier path. Set to default if not found
@@ -464,6 +460,9 @@ demoteUser () {
 				
 				# Clean up privileges check file to reset timer
 				rm "$checkFile" &> /dev/null
+				
+				# Restart the timer immidiately
+				initTimestamp
 				
 			# If timeout occurred, (exit code 4) remove admin rights
 			elif [[ $buttonClicked = 4 ]]; then
