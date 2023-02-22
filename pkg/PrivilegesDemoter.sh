@@ -274,10 +274,11 @@ sapPrivilegesLogger () {
 
 # Function to initiate timestamp for admin calcualtions
 initTimestamp () {
+	# Get current timestamp
+	timeStamp=$(date +%s)
+	
 	# Check if log file exists and create if needed
 	if [[ ! -f ${checkFile} ]]; then
-		# Get current timestamp
-		timeStamp=$(date +%s)
 		# Create file with current timestamp
 		touch ${checkFile}
 		echo "${timeStamp}" > ${checkFile}
