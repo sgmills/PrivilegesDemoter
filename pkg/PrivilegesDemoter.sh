@@ -77,7 +77,11 @@ fi
 
 # Get main text for notifications. Set to default if not found
 if [[ ! $( defaults read "$pdPrefs" MainText 2>/dev/null ) ]]; then
-	main_text="You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?"
+	main_text="You are currently an administrator on this device.
+
+It is recommended to operate as a standard user whenever possible.
+
+Do you still require elevated privileges?"
 else
 	get_text="$( defaults read "$pdPrefs" MainText 2>/dev/null )"
 	# Strip out extra slash in new line characters
@@ -155,7 +159,7 @@ fi
 # THRESHOLD SETUP #
 
 # Check for PrivilegesDemoter admin_threshold or SAP Privileges DockTileTimeout (in that order)
-# If keys are not present or set to never, use default value of 15 minutes
+# If keys are not present or set to 0, use default value of 15 minutes
 if [ "$admin_threshold" ] && [ "$admin_threshold" != 0 ]; then
 	timeLimit=$((admin_threshold * 60))
 elif [ "$sapDockToggleTimeout" ] && [ "$sapDockToggleTimeout" != 0 ]; then
@@ -423,7 +427,7 @@ demoteUser () {
 			# If silent option is passed, demote silently
 			if [[ $silent = 1 ]]; then
 				# Revoke rights with PrivilegesCLI silently
-				pdLog "Info: Silent option used. Not notifying user and removing rights for $currentUser on MachineID: $UDID now."
+				pdLog "Info: Silent option used. Removing rights for $currentUser on MachineID: $UDID without notification."
 				# Use function to demote user
 				demote
 				
@@ -433,11 +437,11 @@ demoteUser () {
 				exit
 				
 			else
-				# Notify the user. Use app that user defined and fall back to what is available if needed
+				# Notify the user. Use app that user defined and fall back jamf helper
 				if [[ $ibm_notifier = 1 ]] && [[ -e "${ibm_notifier_path}" ]]; then
 					prompt_with_ibmNotifier
 				elif [[ $swift_dialog = 1 ]] && [[ -e "${swift_dialog_path}" ]]; then
-					prompt_with_swiftDialog 
+					prompt_with_swiftDialog
 				else
 					prompt_with_jamfHelper
 				fi
@@ -461,7 +465,7 @@ demoteUser () {
 				# Clean up privileges check file to reset timer
 				rm "$checkFile" &> /dev/null
 				
-			# If timeout occurred, remove admin rights
+			# If timeout occurred, (exit code 4) remove admin rights
 			elif [[ $buttonClicked = 4 ]]; then
 				pdLog "Decision: Timeout occurred. Removing admin rights for $currentUser on MachineID: $UDID now."
 				# Use function to demote user
