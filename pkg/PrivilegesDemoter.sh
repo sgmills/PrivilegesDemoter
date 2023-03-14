@@ -187,9 +187,17 @@ usage () {
 # Function to get elapsed time since last run
 adminTime () {
 	if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
-		# Use function to initiate timestamp
-		initTimestamp
-		
+		# If there is no checkfile explain why, then creat it.
+		if [[ ! -f ${checkFile} ]]; then
+			echo "PrivilegesDemoter has not run since the last elevation. Initializing timer now..."
+			echo "Note: PrivilegesDemoter only runs once every 5 minutes."
+			# Use function to initiate timestamp
+			initTimestamp
+		else
+			# Use function to initiate timestamp
+			initTimestamp
+		fi
+			
 		# Get the start time
 		startTime=$( head -n 1 "$checkFile" )
 		
@@ -475,7 +483,7 @@ demoteUser () {
 				
 			# If unexpected code is returned, log an error
 			else
-				pdLog "Error: Unexpected exit code returned from prompt. User: $currentUser, MachineID: $UDID."
+				pdLog "Error: Unexpected exit code [$buttonClicked] returned from prompt. User: $currentUser, MachineID: $UDID."
 			fi
 		else
 			# Current user is not an admin
@@ -505,7 +513,6 @@ checkAdminThreshold () {
 		fi
 	else
 		# User is not admin. Return false, and reset timer
-		pdLog "Info: $currentUser is not an admin on MachineID: $UDID."
 		rm "${checkFile}"
 		return 0
 	fi
