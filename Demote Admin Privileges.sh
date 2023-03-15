@@ -19,16 +19,16 @@
 ####################################################################################################
 # LOG SETUP #
 
-# Create stamp for logging
-stamp="$(date +"%Y-%m-%d %H:%M:%S%z") blog.mostlymac.privileges.demoter"
-
-# Logging location
+# All privilege events logging location
 privilegesLog="/var/log/privileges.log"
 
 # Check if log exists and create if needed
-if [[ ! -f "$privilegesLog" ]]; then
+if [ ! -f "$privilegesLog" ]; then
 	touch "$privilegesLog"
 fi
+
+# Create stamp for logging
+stamp="$(date +"%Y-%m-%d %H:%M:%S%z") blog.mostlymac.privileges.demoter"
 
 # Redirect output to log file and stdout for logging
 exec 1> >( tee -a "${privilegesLog}" ) 2>&1
@@ -51,6 +51,12 @@ help_button_payload="$( defaults read "$pdPrefs" HelpButtonPayload 2>/dev/null )
 # Get notification sound setting
 notification_sound="$( defaults read "$pdPrefs" NotificationSound 2>/dev/null )"
 
+# Are we using IBM Notifer?
+ibm_notifier="$( defaults read "$pdPrefs" IBMNotifier 2>/dev/null )"
+
+# Are we using Swift Dialog?
+swift_dialog="$( defaults read "$pdPrefs" SwiftDialog 2>/dev/null )"
+
 # Get list of excluded admins
 admin_to_exclude="$( defaults read "$pdPrefs" AdminsToExclude 2>/dev/null )"
 
@@ -59,11 +65,11 @@ silent="$( defaults read "$pdPrefs" Silent 2>/dev/null )"
 
 # Get main text for notifications. Set to default if not found
 if [[ ! $( defaults read "$pdPrefs" MainText 2>/dev/null ) ]]; then
-	main_text="You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?"
+	main_text=$( printf "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?" )
 else
 	get_text="$( defaults read "$pdPrefs" MainText 2>/dev/null )"
 	# Strip out extra slash in new line characters
-	main_text="${get_text//'\\n'/\n}"
+	main_text=$( printf "${get_text//'\\n'/\n}" )
 fi
 
 # Check for IBM Notifier path. Set to default if not found
@@ -80,8 +86,14 @@ else
 	ibm_notifier_binary="$( defaults read "$pdPrefs" IBMNotifierBinary )"
 fi
 
+# Set the default path to swift dialog
+swift_dialog_path="/usr/local/bin/dialog"
+
 # Log file which contains the timestamps of the last runs
 checkFile="/tmp/privilegesCheck"
+
+# Location of PrivilegesCLI
+privilegesCLI="/Applications/Privileges.app/Contents/Resources/PrivilegesCLI"
 
 ####################################################################################################
 # SET USER AND DEVICE INFO #
@@ -126,6 +138,15 @@ fi
 ####################################################################################################
 # FUNCTIONS #
 
+# Function to demote the current user
+demote () {
+	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
+		/usr/sbin/dseditgroup -o edit -d "$currentUser" -t user admin
+	else
+		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --remove &> /dev/null
+	fi
+}
+
 # Function to confirm privileges have been changed successfully and log error after 1 retry.
 # Takes user as argument $1
 confirmPrivileges () {
@@ -140,9 +161,9 @@ confirmPrivileges () {
 		if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin &> /dev/null; then
 			echo "$stamp Error: Could not demote ${1} to standard on MachineID: $UDID."
 		else
-			# Successfully demoted with dseditgroup. Need to update dock tile
-			# If running, reload dock to display correct privileges tile
-			if /usr/bin/pgrep Dock -gt 0; then
+			# Successfully demoted with dseditgroup
+			# If dock is running and not in standalone mode, reload to display correct tile
+			if [[ $(/usr/bin/pgrep Dock) -gt 0 ]] && [[ "$standalone" != 1 ]]; then
 				/usr/bin/killall Dock
 			fi
 			
@@ -155,7 +176,7 @@ confirmPrivileges () {
 		echo "$stamp Status: ${1} is now a standard user on MachineID: $UDID."
 	fi
 	
-	# Clean up privilegegs check log file to reset timer
+	# Clean up privileges check log file to reset timer
 	rm "$checkFile" &> /dev/null
 }
 
@@ -186,6 +207,38 @@ prompt_with_ibmNotifier () {
 		"${sound[@]}" \
 		-position center \
 		-always_on_top )
+		
+		echo "$?"
+	}
+	
+	# Get the user's response
+	buttonClicked=$( prompt_user )
+}
+
+# Function to prompt with Swift Dialog
+prompt_with_swiftDialog () {
+	
+	# If help button is enabled, set message and payload accordingly
+	if [[ $help_button_status = 1 ]]; then
+		if [[ $help_button_type == "infopopup" ]]; then
+			help_info=("--helpmessage" "$help_button_payload")
+		elif [[ $help_button_type == "link" ]]; then
+			help_info=("--infobuttontext" "More Info" "--infobuttonaction" "$help_button_payload")
+		fi
+	fi
+	
+	# Prompt the user
+	prompt_user() {
+		button=$( "${swift_dialog_path}" \
+		--title "Privileges Reminder" \
+		--message "$main_text" \
+		--icon "/Applications/Privileges.app/Contents/Resources/AppIcon.icns" \
+		--button1text No \
+		--button2text Yes \
+		"${help_info[@]}" \
+		--timer 120 \
+		--hidetimerbar \
+		--small )
 		
 		echo "$?"
 	}
@@ -231,10 +284,10 @@ demoteUser () {
 			# User with admin is logged in.
 			# If silent option is passed, demote silently
 			if [[ $silent = 1 ]]; then
-				# Revoke rights with PrivilegesCLI silently
-				echo "$stamp Info: Silent option used. Not notifying user and removing rights for $currentUser on MachineID: $UDID now."
-				launchctl asuser "$currentUserID" sudo -u "$currentUser" "/Applications/Privileges.app/Contents/Resources/PrivilegesCLI" --remove &> /dev/null
-				sleep 1
+				# Revoke rights with silently
+				echo "$stamp Info: Silent option used. Removing rights for $currentUser on MachineID: $UDID without notification."
+				# Use function to demote user
+				demote
 				
 				# Run confirm privileges function with current user.
 				confirmPrivileges "$currentUser"
@@ -242,44 +295,49 @@ demoteUser () {
 				exit
 				
 			else
-				# Notify the user. Use IBM Notifier and fall back to jamfHelper if needed
-				if [[ -e "${ibm_notifier_path}" ]]; then
+				# Notify the user. Use app that user defined and fall back jamf helper
+				if [[ $ibm_notifier = 1 ]] && [[ -e "${ibm_notifier_path}" ]]; then
 					prompt_with_ibmNotifier
+				elif [[ $swift_dialog = 1 ]] && [[ -e "${swift_dialog_path}" ]]; then
+					prompt_with_swiftDialog
 				else
 					prompt_with_jamfHelper
 				fi
 			fi
 			
-			# If the user clicked NO (button 0), remove admin rights immidiately
+			# If the user clicked NO (button 0), remove admin rights immediately
 			if [[ $buttonClicked = 0 ]]; then
-				# Revoke rights with PrivilegesCLI
+				# Revoke rights
 				echo "$stamp Decision: $currentUser no longer needs admin rights. Removing rights on MachineID: $UDID now."
-				launchctl asuser "$currentUserID" sudo -u "$currentUser" "/Applications/Privileges.app/Contents/Resources/PrivilegesCLI" --remove &> /dev/null
-				sleep 1
+				# Use function to demote user
+				demote
 				
 				# Run confirm privileges function with current user.
 				confirmPrivileges "$currentUser"
 				
-				# If the user clicked YES (button 2) leave admin rights in tact
+			# If the user clicked YES (button 2) leave admin rights in tact
 			elif [[ $buttonClicked = 2 ]]; then
 				echo "$stamp Decision: $currentUser says they still need admin rights on MachineID: $UDID."
 				echo "$stamp Status: Resetting timer and allowing $currentUser to remain an admin on MachineID: $UDID."
 				
-				# Clean up privilegegs check file to reset timer
+				# Clean up privileges check file to reset timer
 				rm "$checkFile" &> /dev/null
 				
-				# If timeout occured, remove admin rights
+				# Restart the timer immidiately
+				initTimestamp
+				
+			# If timeout occurred, (exit code 4) remove admin rights
 			elif [[ $buttonClicked = 4 ]]; then
 				echo "$stamp Decision: Timeout occurred. Removing admin rights for $currentUser on MachineID: $UDID now."
-				launchctl asuser "$currentUserID" sudo -u "$currentUser" "/Applications/Privileges.app/Contents/Resources/PrivilegesCLI" --remove &> /dev/null
-				sleep 1
+				# Use function to demote user
+				demote
 				
 				# Run confirm privileges function with current user.
 				confirmPrivileges "$currentUser"
 				
-				# If unexpected code is returned, log an error
+			# If unexpected code is returned, log an error
 			else
-				echo "$stamp Error: Unexpected exit code returned from prompt. User: $currentUser, MachineID: $UDID."
+				echo "$stamp Error: Unexpected exit code [$buttonClicked] returned from prompt. User: $currentUser, MachineID: $UDID."
 			fi
 		else
 			# Current user is not an admin
@@ -292,6 +350,7 @@ demoteUser () {
 	
 	exit
 }
+
 ####################################################################################################
 # DEMOTE THE USER #
 
