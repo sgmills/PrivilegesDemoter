@@ -246,8 +246,6 @@ elevate () {
 demote () {
 	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
 		/usr/sbin/dseditgroup -o edit -d "$currentUser" -t user admin
-		echo "$currentUser is now a standard user."
-		
 	else
 		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --remove &> /dev/null
 	fi
@@ -307,9 +305,9 @@ confirmPrivileges () {
 		if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin &> /dev/null; then
 			pdLog "Error: Could not demote ${1} to standard on MachineID: $UDID."
 		else
-			# Successfully demoted with dseditgroup. Need to update dock tile
-			# If running, and not in standalone mode, reload dock to display correct tile
-			if [[ $(/usr/bin/pgrep Dock) -gt 0 ]] && [[ "$standalone" = 0 ]]; then
+			# Successfully demoted with dseditgroup
+			# If dock is running and not in standalone mode, reload to display correct tile
+			if [[ $(/usr/bin/pgrep Dock) -gt 0 ]] && [[ "$standalone" != 1 ]]; then
 				/usr/bin/killall Dock
 			fi
 			
