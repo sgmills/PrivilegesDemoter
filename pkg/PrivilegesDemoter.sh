@@ -36,66 +36,66 @@ pdLog () {
 pdPrefs="/Library/Managed Preferences/blog.mostlymac.privilegesdemoter.plist"
 
 # Get help button status
-help_button_status="$( defaults read "$pdPrefs" HelpButtonStatus 2>/dev/null )"
+help_button_status="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonStatus" "$pdPrefs" 2>/dev/null )"
 
 # Get the help button type
-help_button_type="$( defaults read "$pdPrefs" HelpButtonType 2>/dev/null )"
+help_button_type="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonType" "$pdPrefs" 2>/dev/null )"
 
 # Get the help button payload
-help_button_payload="$( defaults read "$pdPrefs" HelpButtonPayload 2>/dev/null )"
+help_button_payload="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonPayload" "$pdPrefs" 2>/dev/null )"
 
 # Get notification sound setting
-notification_sound="$( defaults read "$pdPrefs" NotificationSound 2>/dev/null )"
+notification_sound="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:NotificationSound" "$pdPrefs" 2>/dev/null )"
 
 # Are we using IBM Notifer?
-ibm_notifier="$( defaults read "$pdPrefs" IBMNotifier 2>/dev/null )"
+ibm_notifier="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:UseIBMNotifier" "$pdPrefs" 2>/dev/null )"
 
 # Are we using Swift Dialog?
-swift_dialog="$( defaults read "$pdPrefs" SwiftDialog 2>/dev/null )"
+swift_dialog="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:SwiftDialog:UseSwiftDialog" "$pdPrefs" 2>/dev/null )"
 
 # Get list of excluded admins
-admin_to_exclude="$( defaults read "$pdPrefs" AdminsToExclude 2>/dev/null )"
+admin_to_exclude="$( /usr/libexec/PlistBuddy -c "print ExcludedAdmins:AdminsToExclude" "$pdPrefs" 2>/dev/null )"
 
 # Get admin threshold
-admin_threshold="$( defaults read "$pdPrefs" AdminThreshold 2>/dev/null )"
+admin_threshold="$( /usr/libexec/PlistBuddy -c "print Reminder:Threshold" "$pdPrefs" 2>/dev/null )"
 
 # Get silent operation setting
-silent="$( defaults read "$pdPrefs" Silent 2>/dev/null )"
+silent="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:DisableNotifications:Silent" "$pdPrefs" 2>/dev/null )"
 
 # Get setting for running from jamf
-jamf="$( defaults read "$pdPrefs" UseJamfPolicy 2>/dev/null )"
+jamf="$( /usr/libexec/PlistBuddy -c "print JamfProSettings:DemoteFromJamf:UsePolicy" "$pdPrefs" 2>/dev/null )"
 
 # Get setting for standalone mode without SAP Privileges
-standalone="$( defaults read "$pdPrefs" Standalone 2>/dev/null )"
+standalone="$( /usr/libexec/PlistBuddy -c "print StandaloneMode:Standalone" "$pdPrefs" 2>/dev/null )"
 
 # Check for jamf trigger. Set to default if not found
-if [[ ! $( defaults read "$pdPrefs" JamfTrigger 2>/dev/null ) ]]; then
+if [[ ! $( /usr/libexec/PlistBuddy -c "print JamfProSettings:DemoteFromJamf:JamfTrigger:Trigger" "$pdPrefs" 2>/dev/null ) ]]; then
 	jamf_trigger="privilegesDemote"
 else
-	jamf_trigger="$( defaults read "$pdPrefs" JamfTrigger 2>/dev/null )"
+	jamf_trigger="$( /usr/libexec/PlistBuddy -c "print JamfProSettings:DemoteFromJamf:JamfTrigger:Trigger" "$pdPrefs" 2>/dev/null )"
 fi
 
 # Get main text for notifications. Set to default if not found
-if [[ ! $( defaults read "$pdPrefs" MainText 2>/dev/null ) ]]; then
+if [[ ! $( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null ) ]]; then
 	main_text=$( printf "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?" )
 else
-	get_text="$( defaults read "$pdPrefs" MainText 2>/dev/null )"
+	get_text="$( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null )"
 	# Strip out extra slash in new line characters
 	main_text=$( printf "${get_text//'\\n'/\n}" )
 fi
 
 # Check for IBM Notifier path. Set to default if not found
-if [[ ! $( defaults read "$pdPrefs" IBMNotifierPath 2>/dev/null ) ]]; then
+if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null ) ]]; then
 	ibm_notifier_path="/Applications/IBM Notifier.app"
 else
-	ibm_notifier_path="$( defaults read "$pdPrefs" IBMNotifierPath )"
+	ibm_notifier_path="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null )"
 fi
 
 # Check for IBM Notifier custom binary name. Set to default if not found
-if [[ ! $( defaults read "$pdPrefs" IBMNotifierBinary 2>/dev/null ) ]]; then
+if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null ) ]]; then
 	ibm_notifier_binary="IBM Notifier"
 else
-	ibm_notifier_binary="$( defaults read "$pdPrefs" IBMNotifierBinary )"
+	ibm_notifier_binary="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null )"
 fi
 
 # Set the default path to swift dialog
@@ -103,7 +103,9 @@ swift_dialog_path="/usr/local/bin/dialog"
 
 # Get DockToggleTimeout from SAP Privileges preferences (if it exists)
 sapPrivilegesPreferences="/Library/Managed Preferences/corp.sap.privileges.plist"
-sapDockToggleTimeout=$( defaults read "$sapPrivilegesPreferences" DockToggleTimeout 2>/dev/null )
+if [ -e "$sapPrivilegesPreferences" ]; then
+	sapDockToggleTimeout=$( /usr/libexec/PlistBuddy -c "print DockToggleTimeout" "$sapPrivilegesPreferences" 2>/dev/null )
+fi
 
 # Log file which contains the timestamps of the last runs
 checkFile="/tmp/privilegesCheck"
@@ -224,7 +226,7 @@ adminTime () {
 
 # Function to elevate the current user
 elevate () {
-	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
+	if [[ "$standalone" = true ]] || [[ ! -e "${privilegesCLI}" ]]; then
 		if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
 			pdLog "Status: User $currentUser already has the requested privileges. Nothing to do."
 			echo "$currentUser is already an administrator. Nothing to do."
@@ -244,7 +246,7 @@ elevate () {
 
 # Function to demote the current user
 demote () {
-	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
+	if [[ "$standalone" = true ]] || [[ ! -e "${privilegesCLI}" ]]; then
 		/usr/sbin/dseditgroup -o edit -d "$currentUser" -t user admin
 	else
 		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --remove &> /dev/null
@@ -253,7 +255,7 @@ demote () {
 
 # Function to get the current user status
 status () {
-	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
+	if [[ "$standalone" = true ]] || [[ ! -e "${privilegesCLI}" ]]; then
 		if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
 			echo "User $currentUser has administrator rights."
 		else
@@ -307,7 +309,7 @@ confirmPrivileges () {
 		else
 			# Successfully demoted with dseditgroup
 			# If dock is running and not in standalone mode, reload to display correct tile
-			if [[ $(/usr/bin/pgrep Dock) -gt 0 ]] && [[ "$standalone" != 1 ]]; then
+			if [[ $(/usr/bin/pgrep Dock) -gt 0 ]] && [[ "$standalone" != true ]]; then
 				/usr/bin/killall Dock
 			fi
 			
@@ -328,12 +330,12 @@ confirmPrivileges () {
 prompt_with_ibmNotifier () {
 	
 	# If help button is enabled, set type and payload
-	if [[ $help_button_status = 1 ]]; then
+	if [[ $help_button_status = true ]]; then
 		help_info=("-help_button_cta_type" "${help_button_type}" "-help_button_cta_payload" "${help_button_payload}")
 	fi
 	
 	# Disable sounds if needed
-	if [[ $notification_sound = 0 ]]; then
+	if [[ $notification_sound = false ]]; then
 		sound=("-silent")
 	fi
 	
@@ -363,7 +365,7 @@ prompt_with_ibmNotifier () {
 prompt_with_swiftDialog () {
 	
 	# If help button is enabled, set message and payload accordingly
-	if [[ $help_button_status = 1 ]]; then
+	if [[ $help_button_status = true ]]; then
 		if [[ $help_button_type == "infopopup" ]]; then
 			help_info=("--helpmessage" "$help_button_payload")
 		elif [[ $help_button_type == "link" ]]; then
@@ -427,7 +429,7 @@ demoteUser () {
 			
 			# User with admin is logged in.
 			# If silent option is passed, demote silently
-			if [[ $silent = 1 ]]; then
+			if [[ $silent = true ]]; then
 				# Revoke rights with PrivilegesCLI silently
 				pdLog "Info: Silent option used. Removing rights for $currentUser on MachineID: $UDID without notification."
 				# Use function to demote user
@@ -440,9 +442,9 @@ demoteUser () {
 				
 			else
 				# Notify the user. Use app that user defined and fall back jamf helper
-				if [[ $ibm_notifier = 1 ]] && [[ -e "${ibm_notifier_path}" ]]; then
+				if [[ $ibm_notifier = true ]] && [[ -e "${ibm_notifier_path}" ]]; then
 					prompt_with_ibmNotifier
-				elif [[ $swift_dialog = 1 ]] && [[ -e "${swift_dialog_path}" ]]; then
+				elif [[ $swift_dialog = true ]] && [[ -e "${swift_dialog_path}" ]]; then
 					prompt_with_swiftDialog
 				else
 					prompt_with_jamfHelper
@@ -532,7 +534,7 @@ while test $# -gt 0; do
 		;;
 		--demote-silent)
 			# Set the silent flag to true
-			silent=1
+			silent= true
 			# Run function to demote the user now
 			demoteUser
 		;;
@@ -568,7 +570,7 @@ passedThreshold="$?"
 # If logged in user is passed the threshold offer to demote them
 if [[ "$passedThreshold" = 1 ]]; then
 	# Check if we should perform demotion from Jamf or locally
-	if [[ "$jamf" = 1 ]]; then
+	if [[ "$jamf" = true ]]; then
 		/usr/local/bin/jamf policy -event "$jamf_trigger"
 	else
 		# Use function to demote user
