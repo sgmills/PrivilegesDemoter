@@ -98,6 +98,9 @@ else
 	ibm_notifier_binary="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null )"
 fi
 
+# Set path to the icon
+icon="/usr/local/mostlymac/icon.png"
+
 # Set the default path to swift dialog
 swift_dialog_path="/usr/local/bin/dialog"
 
@@ -121,50 +124,6 @@ currentUser=$( scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ && ! /
 
 # Get machine UDID
 UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}' )
-
-####################################################################################################
-# SET EXCLUDED USERS #
-
-# Read comma separated list of excluded admins into array
-IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
-
-# Add always excluded users to array
-excludedUsers+=("root" "_mbsetupuser")
-
-# Function to check if array contains a user
-containsUser () {
-	local e
-	for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 1; done
-	return 0
-}
-
-# Use function to check if current user is excluded from demotion
-containsUser "$currentUser" "${excludedUsers[@]}"
-excludedUserLoggedIn="$?"
-
-####################################################################################################
-# STOP HERE AND EXIT IF EXCLUDED USER IS LOGGED IN #
-
-# If current user is excluded from demotion, reset timer and exit
-if [[ "$excludedUserLoggedIn" = 1 ]]; then
-	pdLog "Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
-	# Reset timer and exit 0
-	rm "$checkFile" &> /dev/null
-	exit 0
-fi
-
-####################################################################################################
-# THRESHOLD SETUP #
-
-# Check for PrivilegesDemoter admin_threshold or SAP Privileges DockTileTimeout (in that order)
-# If keys are not present or set to 0, use default value of 15 minutes
-if [ "$admin_threshold" ] && [ "$admin_threshold" != 0 ]; then
-	timeLimit=$((admin_threshold * 60))
-elif [ "$sapDockToggleTimeout" ] && [ "$sapDockToggleTimeout" != 0 ]; then
-	timeLimit=$((sapDockToggleTimeout * 60))
-else
-	timeLimit=900
-fi
 
 ####################################################################################################
 # FUNCTIONS #
@@ -345,7 +304,7 @@ prompt_with_ibmNotifier () {
 		-type "popup" \
 		-bar_title "Privileges Reminder" \
 		-subtitle "$main_text" \
-		-icon_path "/Applications/Privileges.app/Contents/Resources/AppIcon.icns" \
+		-icon_path "$icon" \
 		-main_button_label "No" \
 		-secondary_button_label "Yes" \
 		"${help_info[@]}" \
@@ -378,7 +337,7 @@ prompt_with_swiftDialog () {
 		button=$( "${swift_dialog_path}" \
 		--title "Privileges Reminder" \
 		--message "$main_text" \
-		--icon "/Applications/Privileges.app/Contents/Resources/AppIcon.icns" \
+		--icon "$icon" \
 		--button1text No \
 		--button2text Yes \
 		"${help_info[@]}" \
@@ -403,7 +362,7 @@ prompt_with_jamfHelper () {
 		-title "Privileges Reminder" \
 		-description "$main_text" \
 		-alignDescription left \
-		-icon "/Applications/Privileges.app/Contents/Resources/AppIcon.icns" \
+		-icon "$icon" \
 		-button1 No \
 		-button2 Yes \
 		-defaultButton 1 \
@@ -553,6 +512,50 @@ while test $# -gt 0; do
 	esac
 	shift
 done
+
+####################################################################################################
+# SET EXCLUDED USERS #
+
+# Read comma separated list of excluded admins into array
+IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
+
+# Add always excluded users to array
+excludedUsers+=("root" "_mbsetupuser")
+
+# Function to check if array contains a user
+containsUser () {
+	local e
+	for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 1; done
+	return 0
+}
+
+# Use function to check if current user is excluded from demotion
+containsUser "$currentUser" "${excludedUsers[@]}"
+excludedUserLoggedIn="$?"
+
+####################################################################################################
+# STOP HERE AND EXIT IF EXCLUDED USER IS LOGGED IN #
+
+# If current user is excluded from demotion, reset timer and exit
+if [[ "$excludedUserLoggedIn" = 1 ]]; then
+	pdLog "Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
+	# Reset timer and exit 0
+	rm "$checkFile" &> /dev/null
+	exit 0
+fi
+
+####################################################################################################
+# THRESHOLD SETUP #
+
+# Check for PrivilegesDemoter admin_threshold or SAP Privileges DockTileTimeout (in that order)
+# If keys are not present or set to 0, use default value of 15 minutes
+if [ "$admin_threshold" ] && [ "$admin_threshold" != 0 ]; then
+	timeLimit=$((admin_threshold * 60))
+elif [ "$sapDockToggleTimeout" ] && [ "$sapDockToggleTimeout" != 0 ]; then
+	timeLimit=$((sapDockToggleTimeout * 60))
+else
+	timeLimit=900
+fi
 
 ####################################################################################################
 # DO THE WORK #

@@ -86,6 +86,9 @@ else
 	ibm_notifier_binary="$( defaults read "$pdPrefs" IBMNotifierBinary )"
 fi
 
+# Set path to the icon
+icon="/usr/local/mostlymac/icon.png"
+
 # Set the default path to swift dialog
 swift_dialog_path="/usr/local/bin/dialog"
 
@@ -199,7 +202,7 @@ prompt_with_ibmNotifier () {
 		-type "popup" \
 		-bar_title "Privileges Reminder" \
 		-subtitle "$main_text" \
-		-icon_path "/Applications/Privileges.app/Contents/Resources/AppIcon.icns" \
+		-icon_path "$icon" \
 		-main_button_label "No" \
 		-secondary_button_label "Yes" \
 		"${help_info[@]}" \
@@ -232,7 +235,7 @@ prompt_with_swiftDialog () {
 		button=$( "${swift_dialog_path}" \
 		--title "Privileges Reminder" \
 		--message "$main_text" \
-		--icon "/Applications/Privileges.app/Contents/Resources/AppIcon.icns" \
+		--icon "$icon" \
 		--button1text No \
 		--button2text Yes \
 		"${help_info[@]}" \
@@ -257,7 +260,7 @@ prompt_with_jamfHelper () {
 		-title "Privileges Reminder" \
 		-description "$main_text" \
 		-alignDescription left \
-		-icon "/Applications/Privileges.app/Contents/Resources/AppIcon.icns" \
+		-icon "$icon" \
 		-button1 No \
 		-button2 Yes \
 		-defaultButton 1 \
@@ -322,9 +325,6 @@ demoteUser () {
 				
 				# Clean up privileges check file to reset timer
 				rm "$checkFile" &> /dev/null
-				
-				# Restart the timer immidiately
-				initTimestamp
 				
 			# If timeout occurred, (exit code 4) remove admin rights
 			elif [[ $buttonClicked = 4 ]]; then
