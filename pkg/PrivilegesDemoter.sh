@@ -99,7 +99,6 @@ if [[ -e "$pdPrefs" ]]; then
 		ibm_notifier_binary="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null )"
 	fi
 else
-	pdLog "Info: No configuration profile detected. Using default settings."
 	main_text=$( printf "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?" )
 fi
 
