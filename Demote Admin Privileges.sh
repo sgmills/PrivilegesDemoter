@@ -39,67 +39,59 @@ exec 1> >( tee -a "${privilegesLog}" ) 2>&1
 # PrivilegesDemoter managed preferences plist
 pdPrefs="/Library/Managed Preferences/blog.mostlymac.privilegesdemoter.plist"
 
-# Get help button status
-help_button_status="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonStatus" "$pdPrefs" 2>/dev/null )"
-
-# Get the help button type
-help_button_type="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonType" "$pdPrefs" 2>/dev/null )"
-
-# Get the help button payload
-help_button_payload="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonPayload" "$pdPrefs" 2>/dev/null )"
-
-# Get notification sound setting
-notification_sound="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:NotificationSound" "$pdPrefs" 2>/dev/null )"
-
-# Are we using IBM Notifer?
-ibm_notifier="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:UseIBMNotifier" "$pdPrefs" 2>/dev/null )"
-
-# Are we using Swift Dialog?
-swift_dialog="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:SwiftDialog:UseSwiftDialog" "$pdPrefs" 2>/dev/null )"
-
-# Get list of excluded admins
-admin_to_exclude="$( /usr/libexec/PlistBuddy -c "print ExcludedAdmins:AdminsToExclude" "$pdPrefs" 2>/dev/null )"
-
-# Get admin threshold
-admin_threshold="$( /usr/libexec/PlistBuddy -c "print Reminder:Threshold" "$pdPrefs" 2>/dev/null )"
-
-# Get silent operation setting
-silent="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:DisableNotifications:Silent" "$pdPrefs" 2>/dev/null )"
-
-# Get setting for running from jamf
-jamf="$( /usr/libexec/PlistBuddy -c "print JamfProSettings:DemoteFromJamf:UsePolicy" "$pdPrefs" 2>/dev/null )"
-
-# Get setting for standalone mode without SAP Privileges
-standalone="$( /usr/libexec/PlistBuddy -c "print StandaloneMode:Standalone" "$pdPrefs" 2>/dev/null )"
-
-# Check for jamf trigger. Set to default if not found
-if [[ ! $( /usr/libexec/PlistBuddy -c "print JamfProSettings:DemoteFromJamf:JamfTrigger:Trigger" "$pdPrefs" 2>/dev/null ) ]]; then
-	jamf_trigger="privilegesDemote"
+if [[ -e "$pdPrefs" ]]; then
+	# Get help button status
+	help_button_status="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonStatus" "$pdPrefs" 2>/dev/null )"
+	
+	# Get the help button type
+	help_button_type="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonType" "$pdPrefs" 2>/dev/null )"
+	
+	# Get the help button payload
+	help_button_payload="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonPayload" "$pdPrefs" 2>/dev/null )"
+	
+	# Get notification sound setting
+	notification_sound="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:NotificationSound" "$pdPrefs" 2>/dev/null )"
+	
+	# Are we using IBM Notifer?
+	ibm_notifier="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:UseIBMNotifier" "$pdPrefs" 2>/dev/null )"
+	
+	# Are we using Swift Dialog?
+	swift_dialog="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:SwiftDialog:UseSwiftDialog" "$pdPrefs" 2>/dev/null )"
+	
+	# Get list of excluded admins
+	admin_to_exclude="$( /usr/libexec/PlistBuddy -c "print ExcludedAdmins:AdminsToExclude" "$pdPrefs" 2>/dev/null )"
+	
+	# Get silent operation setting
+	silent="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:DisableNotifications:Silent" "$pdPrefs" 2>/dev/null )"
+	
+	# Get setting for standalone mode without SAP Privileges
+	standalone="$( /usr/libexec/PlistBuddy -c "print StandaloneMode:Standalone" "$pdPrefs" 2>/dev/null )"
+	
+	# Get main text for notifications. Set to default if not found
+	if [[ ! $( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null ) ]]; then
+		main_text=$( printf "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?" )
+	else
+		get_text="$( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null )"
+		# Strip out extra slash in new line characters
+		main_text=$( printf "${get_text//'\\n'/\n}" )
+	fi
+	
+	# Check for IBM Notifier path. Set to default if not found
+	if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null ) ]]; then
+		ibm_notifier_path="/Applications/IBM Notifier.app"
+	else
+		ibm_notifier_path="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null )"
+	fi
+	
+	# Check for IBM Notifier custom binary name. Set to default if not found
+	if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null ) ]]; then
+		ibm_notifier_binary="IBM Notifier"
+	else
+		ibm_notifier_binary="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null )"
+	fi
 else
-	jamf_trigger="$( /usr/libexec/PlistBuddy -c "print JamfProSettings:DemoteFromJamf:JamfTrigger:Trigger" "$pdPrefs" 2>/dev/null )"
-fi
-
-# Get main text for notifications. Set to default if not found
-if [[ ! $( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null ) ]]; then
+	pdLog "Info: No configuration profile detected. Using default settings."
 	main_text=$( printf "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?" )
-else
-	get_text="$( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null )"
-	# Strip out extra slash in new line characters
-	main_text=$( printf "${get_text//'\\n'/\n}" )
-fi
-
-# Check for IBM Notifier path. Set to default if not found
-if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null ) ]]; then
-	ibm_notifier_path="/Applications/IBM Notifier.app"
-else
-	ibm_notifier_path="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null )"
-fi
-
-# Check for IBM Notifier custom binary name. Set to default if not found
-if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null ) ]]; then
-	ibm_notifier_binary="IBM Notifier"
-else
-	ibm_notifier_binary="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null )"
 fi
 
 # Set path to the icon
