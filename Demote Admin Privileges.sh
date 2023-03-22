@@ -40,50 +40,66 @@ exec 1> >( tee -a "${privilegesLog}" ) 2>&1
 pdPrefs="/Library/Managed Preferences/blog.mostlymac.privilegesdemoter.plist"
 
 # Get help button status
-help_button_status="$( defaults read "$pdPrefs" HelpButtonStatus 2>/dev/null )"
+help_button_status="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonStatus" "$pdPrefs" 2>/dev/null )"
 
 # Get the help button type
-help_button_type="$( defaults read "$pdPrefs" HelpButtonType 2>/dev/null )"
+help_button_type="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonType" "$pdPrefs" 2>/dev/null )"
 
 # Get the help button payload
-help_button_payload="$( defaults read "$pdPrefs" HelpButtonPayload 2>/dev/null )"
+help_button_payload="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonPayload" "$pdPrefs" 2>/dev/null )"
 
 # Get notification sound setting
-notification_sound="$( defaults read "$pdPrefs" NotificationSound 2>/dev/null )"
+notification_sound="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:NotificationSound" "$pdPrefs" 2>/dev/null )"
 
 # Are we using IBM Notifer?
-ibm_notifier="$( defaults read "$pdPrefs" IBMNotifier 2>/dev/null )"
+ibm_notifier="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:UseIBMNotifier" "$pdPrefs" 2>/dev/null )"
 
 # Are we using Swift Dialog?
-swift_dialog="$( defaults read "$pdPrefs" SwiftDialog 2>/dev/null )"
+swift_dialog="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:SwiftDialog:UseSwiftDialog" "$pdPrefs" 2>/dev/null )"
 
 # Get list of excluded admins
-admin_to_exclude="$( defaults read "$pdPrefs" AdminsToExclude 2>/dev/null )"
+admin_to_exclude="$( /usr/libexec/PlistBuddy -c "print ExcludedAdmins:AdminsToExclude" "$pdPrefs" 2>/dev/null )"
+
+# Get admin threshold
+admin_threshold="$( /usr/libexec/PlistBuddy -c "print Reminder:Threshold" "$pdPrefs" 2>/dev/null )"
 
 # Get silent operation setting
-silent="$( defaults read "$pdPrefs" Silent 2>/dev/null )"
+silent="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:DisableNotifications:Silent" "$pdPrefs" 2>/dev/null )"
+
+# Get setting for running from jamf
+jamf="$( /usr/libexec/PlistBuddy -c "print JamfProSettings:DemoteFromJamf:UsePolicy" "$pdPrefs" 2>/dev/null )"
+
+# Get setting for standalone mode without SAP Privileges
+standalone="$( /usr/libexec/PlistBuddy -c "print StandaloneMode:Standalone" "$pdPrefs" 2>/dev/null )"
+
+# Check for jamf trigger. Set to default if not found
+if [[ ! $( /usr/libexec/PlistBuddy -c "print JamfProSettings:DemoteFromJamf:JamfTrigger:Trigger" "$pdPrefs" 2>/dev/null ) ]]; then
+	jamf_trigger="privilegesDemote"
+else
+	jamf_trigger="$( /usr/libexec/PlistBuddy -c "print JamfProSettings:DemoteFromJamf:JamfTrigger:Trigger" "$pdPrefs" 2>/dev/null )"
+fi
 
 # Get main text for notifications. Set to default if not found
-if [[ ! $( defaults read "$pdPrefs" MainText 2>/dev/null ) ]]; then
+if [[ ! $( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null ) ]]; then
 	main_text=$( printf "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?" )
 else
-	get_text="$( defaults read "$pdPrefs" MainText 2>/dev/null )"
+	get_text="$( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null )"
 	# Strip out extra slash in new line characters
 	main_text=$( printf "${get_text//'\\n'/\n}" )
 fi
 
 # Check for IBM Notifier path. Set to default if not found
-if [[ ! $( defaults read "$pdPrefs" IBMNotifierPath 2>/dev/null ) ]]; then
+if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null ) ]]; then
 	ibm_notifier_path="/Applications/IBM Notifier.app"
 else
-	ibm_notifier_path="$( defaults read "$pdPrefs" IBMNotifierPath )"
+	ibm_notifier_path="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null )"
 fi
 
 # Check for IBM Notifier custom binary name. Set to default if not found
-if [[ ! $( defaults read "$pdPrefs" IBMNotifierBinary 2>/dev/null ) ]]; then
+if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null ) ]]; then
 	ibm_notifier_binary="IBM Notifier"
 else
-	ibm_notifier_binary="$( defaults read "$pdPrefs" IBMNotifierBinary )"
+	ibm_notifier_binary="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null )"
 fi
 
 # Set path to the icon
@@ -108,45 +124,27 @@ currentUser=$( scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ && ! /
 UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}' )
 
 ####################################################################################################
-# SET EXCLUDED USERS #
-
-# Read comma separated list of excluded admins into array
-IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
-
-# Add always excluded users to array
-excludedUsers+=("root" "_mbsetupuser")
-
-# Function to check if array contains a user
-containsUser () {
-	local e
-	for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 1; done
-	return 0
-}
-
-# Use function to check if current user is excluded from demotion
-containsUser "$currentUser" "${excludedUsers[@]}"
-excludedUserLoggedIn="$?"
-
-####################################################################################################
-# STOP HERE AND EXIT IF EXCLUDED USER IS LOGGED IN #
-
-# If current user is excluded from demotion, reset timer and exit
-if [[ "$excludedUserLoggedIn" = 1 ]]; then
-	echo "$stamp Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
-	# Reset timer and exit 0
-	rm "$checkFile" &> /dev/null
-	exit 0
-fi
-
-####################################################################################################
 # FUNCTIONS #
 
 # Function to demote the current user
 demote () {
-	if [[ "$standalone" = 1 ]] || [[ ! -e "${privilegesCLI}" ]]; then
+	if [[ "$standalone" = true ]] || [[ ! -e "${privilegesCLI}" ]]; then
 		/usr/sbin/dseditgroup -o edit -d "$currentUser" -t user admin
 	else
 		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --remove &> /dev/null
+	fi
+}
+
+# Function to initiate timestamp for admin calculations
+initTimestamp () {
+	# Get current timestamp
+	timeStamp=$(date +%s)
+	
+	# Check if log file exists and create if needed
+	if [[ ! -f ${checkFile} ]]; then
+		# Create file with current timestamp
+		touch ${checkFile}
+		echo "${timeStamp}" > ${checkFile}
 	fi
 }
 
@@ -166,7 +164,7 @@ confirmPrivileges () {
 		else
 			# Successfully demoted with dseditgroup
 			# If dock is running and not in standalone mode, reload to display correct tile
-			if [[ $(/usr/bin/pgrep Dock) -gt 0 ]] && [[ "$standalone" != 1 ]]; then
+			if [[ $(/usr/bin/pgrep Dock) -gt 0 ]] && [[ "$standalone" != true ]]; then
 				/usr/bin/killall Dock
 			fi
 			
@@ -187,12 +185,12 @@ confirmPrivileges () {
 prompt_with_ibmNotifier () {
 	
 	# If help button is enabled, set type and payload
-	if [[ $help_button_status = 1 ]]; then
+	if [[ $help_button_status = true ]]; then
 		help_info=("-help_button_cta_type" "${help_button_type}" "-help_button_cta_payload" "${help_button_payload}")
 	fi
 	
 	# Disable sounds if needed
-	if [[ $notification_sound = 0 ]]; then
+	if [[ $notification_sound = false ]]; then
 		sound=("-silent")
 	fi
 	
@@ -222,7 +220,7 @@ prompt_with_ibmNotifier () {
 prompt_with_swiftDialog () {
 	
 	# If help button is enabled, set message and payload accordingly
-	if [[ $help_button_status = 1 ]]; then
+	if [[ $help_button_status = true ]]; then
 		if [[ $help_button_type == "infopopup" ]]; then
 			help_info=("--helpmessage" "$help_button_payload")
 		elif [[ $help_button_type == "link" ]]; then
@@ -286,8 +284,8 @@ demoteUser () {
 			
 			# User with admin is logged in.
 			# If silent option is passed, demote silently
-			if [[ $silent = 1 ]]; then
-				# Revoke rights with silently
+			if [[ $silent = true ]]; then
+				# Revoke rights silently
 				echo "$stamp Info: Silent option used. Removing rights for $currentUser on MachineID: $UDID without notification."
 				# Use function to demote user
 				demote
@@ -299,9 +297,9 @@ demoteUser () {
 				
 			else
 				# Notify the user. Use app that user defined and fall back jamf helper
-				if [[ $ibm_notifier = 1 ]] && [[ -e "${ibm_notifier_path}" ]]; then
+				if [[ $ibm_notifier = true ]] && [[ -e "${ibm_notifier_path}" ]]; then
 					prompt_with_ibmNotifier
-				elif [[ $swift_dialog = 1 ]] && [[ -e "${swift_dialog_path}" ]]; then
+				elif [[ $swift_dialog = true ]] && [[ -e "${swift_dialog_path}" ]]; then
 					prompt_with_swiftDialog
 				else
 					prompt_with_jamfHelper
@@ -325,6 +323,9 @@ demoteUser () {
 				
 				# Clean up privileges check file to reset timer
 				rm "$checkFile" &> /dev/null
+				
+				# Restart the timer immidiately
+				initTimestamp
 				
 			# If timeout occurred, (exit code 4) remove admin rights
 			elif [[ $buttonClicked = 4 ]]; then
@@ -350,6 +351,38 @@ demoteUser () {
 	
 	exit
 }
+
+
+####################################################################################################
+# SET EXCLUDED USERS #
+
+# Read comma separated list of excluded admins into array
+IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
+
+# Add always excluded users to array
+excludedUsers+=("root" "_mbsetupuser")
+
+# Function to check if array contains a user
+containsUser () {
+	local e
+	for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 1; done
+	return 0
+}
+
+# Use function to check if current user is excluded from demotion
+containsUser "$currentUser" "${excludedUsers[@]}"
+excludedUserLoggedIn="$?"
+
+####################################################################################################
+# STOP HERE AND EXIT IF EXCLUDED USER IS LOGGED IN #
+
+# If current user is excluded from demotion, reset timer and exit
+if [[ "$excludedUserLoggedIn" = 1 ]]; then
+	echo "$stamp Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
+	# Reset timer and exit 0
+	rm "$checkFile" &> /dev/null
+	exit 0
+fi
 
 ####################################################################################################
 # DEMOTE THE USER #

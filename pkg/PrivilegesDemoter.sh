@@ -389,7 +389,7 @@ demoteUser () {
 			# User with admin is logged in.
 			# If silent option is passed, demote silently
 			if [[ $silent = true ]]; then
-				# Revoke rights with PrivilegesCLI silently
+				# Revoke rights silently
 				pdLog "Info: Silent option used. Removing rights for $currentUser on MachineID: $UDID without notification."
 				# Use function to demote user
 				demote
@@ -412,7 +412,7 @@ demoteUser () {
 			
 			# If the user clicked NO (button 0), remove admin rights immediately
 			if [[ $buttonClicked = 0 ]]; then
-				# Revoke rights with PrivilegesCLI
+				# Revoke rights
 				pdLog "Decision: $currentUser no longer needs admin rights. Removing rights on MachineID: $UDID now."
 				# Use function to demote user
 				demote
