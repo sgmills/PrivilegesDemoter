@@ -1,0 +1,355 @@
+{
+    "title": "PrivilegesDemoter (blog.mostlymac.privilegesdemoter)",
+    "description": "Preference settings for PrivilegesDemoter",
+    "links": [
+        {
+            "rel": "More information",
+            "href": "https://github.com/sgmills/PrivilegesDemoter"
+        }
+    ],
+    "properties": {
+        "NotificationAgent": {
+            "description": "Notification agent settings. Configure ONLY ONE.",
+            "title": "Notification Agent",
+            "anyOf": [
+                {
+                    "title": "Not Configured",
+                    "type": "null"
+                },
+                {
+                    "title": "Configured",
+                    "type": "object",
+                    "properties": {
+                        "IBMNotifier": {
+                            "description": "IBM Notifier settings.",
+                            "title": "IBM Notifier",
+                            "anyOf": [
+                                {
+                                    "title": "Not Configured",
+                                    "type": "null"
+                                },
+                                {
+                                    "title": "Configured",
+                                    "type": "object",
+                                    "properties": {
+                                        "UseIBMNotifier": {
+                                            "title": "Use IBM Notifier",
+                                            "description": "Use IBM Notifier as the notification agent.",
+                                            "type": "boolean",
+                                            "default": true
+                                        },
+                                        "NotificationSound": {
+                                            "title": "Notification Sound",
+                                            "description": "Notification sound is enabled by default. (Only available with IBM Notifier)",
+                                            "type": "boolean",
+                                            "default": true
+                                        },
+                                        "IBMNotifierPath": {
+                                            "description": "Settings for non-standard IBM Notifier location.",
+                                            "title": "IBM Notifier Path",
+                                            "anyOf": [
+                                                {
+                                                    "title": "Not Configured",
+                                                    "type": "null"
+                                                },
+                                                {
+                                                    "title": "Configured",
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "IBMNotifierPath": {
+                                                            "title": "IBM Notifier Path",
+                                                            "description": "(Optional) Only required if IBM Notifier is not at the default location.",
+                                                            "type": "string",
+                                                            "options": {
+                                                                "inputAttributes": {
+                                                                    "placeholder": "/Applications/IBM Notifier.app"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "RebrandedIBMNotifier": {
+                                            "description": "Settings for rebranded IBM Notifier Application.",
+                                            "title": "Rebranded IBM Notifier",
+                                            "anyOf": [
+                                                {
+                                                    "title": "Not Configured",
+                                                    "type": "null"
+                                                },
+                                                {
+                                                    "title": "Configured",
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "IBMNotifierBinary": {
+                                                            "title": "IBM Notifier Binary",
+                                                            "description": "(Optional) Only required if app is rebranded with different binary name.",
+                                                            "links": [
+                                                                {
+                                                                    "rel": "More information",
+                                                                    "href": "https://github.com/IBM/mac-ibm-notifications/wiki/Rebranding-the-application"
+                                                                }
+                                                            ],
+                                                            "type": "string",
+                                                            "options": {
+                                                                "inputAttributes": {
+                                                                    "placeholder": "IBM Notifier"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "SwiftDialog": {
+                            "description": "Use SwiftDialog as the notification agent.",
+                            "title": "Swift Dialog",
+                            "anyOf": [
+                                {
+                                    "title": "Not Configured",
+                                    "type": "null"
+                                },
+                                {
+                                    "title": "Configured",
+                                    "type": "object",
+                                    "properties": {
+                                        "UseSwiftDialog": {
+                                            "title": "Use Swift Dialog",
+                                            "type": "boolean",
+                                            "default": true
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                        ,
+                        "DisableNotifications": {
+                            "description": "Do not show notifications. Silently demote the user in the background.",
+                            "title": "Disable Notifications",
+                            "anyOf": [
+                                {
+                                    "title": "Not Configured",
+                                    "type": "null"
+                                },
+                                {
+                                    "title": "Configured",
+                                    "type": "object",
+                                    "properties": {
+                                        "Silent": {
+                                            "title": "Demote Silently",
+                                            "type": "boolean",
+                                            "default": true
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "UserInterface": {
+            "description": "User interface settings.",
+            "title": "User Interface",
+            "anyOf": [
+                {
+                    "title": "Not Configured",
+                    "type": "null"
+                },
+                {
+                    "title": "Configured",
+                    "type": "object",
+                    "properties": {
+                        "HelpButton": {
+                            "description": "Setting for the help button.",
+                            "title": "Help Button",
+                            "anyOf": [
+                                {
+                                    "title": "Not Configured",
+                                    "type": "null"
+                                },
+                                {
+                                    "title": "Configured",
+                                    "type": "object",
+                                    "properties": {
+                                        "HelpButtonStatus": {
+                                            "title": "Help Button Status",
+                                            "type": "boolean",
+                                            "default": true
+                                        },
+                                        "HelpButtonType": {
+                                            "title": "Help Button Type",
+                                            "type": "string",
+                                            "enum": [
+                                                "infopopup",
+                                                "link"
+                                            ]
+                                        },
+                                        "HelpButtonPayload": {
+                                            "title": "Help Button Payload",
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "MainText": {
+                            "description": "Reminder text that is displayed to the user.",
+                            "title": "Main Text",
+                            "anyOf": [
+                                {
+                                    "title": "Not Configured",
+                                    "type": "null"
+                                },
+                                {
+                                    "title": "Configured",
+                                    "type": "object",
+                                    "properties": {
+                                        "Text": {
+                                            "title": "Text",
+                                            "description": "Use \\n for a new line.",
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "ExcludedAdmins": {
+            "description": "Comma separated list of administrators to exclude from demotion.",
+            "title": "Excluded Admins",
+            "anyOf": [
+                {
+                    "title": "Not Configured",
+                    "type": "null"
+                },
+                {
+                    "title": "Configured",
+                    "type": "object",
+                    "properties": {
+                        "AdminsToExclude": {
+                            "title": "Admins to Exclude",
+                            "type": "string",
+                            "options": {
+                                "inputAttributes": {
+                                    "placeholder": "OrgAdmin, JamfAdmin"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "Reminder": {
+            "description": "Amount of time before administrators see the reminder and/or get demoted to standard.",
+            "title": "Reminder Threshold",
+            "anyOf": [
+                {
+                    "title": "Not Configured",
+                    "type": "null"
+                },
+                {
+                    "title": "Configured",
+                    "type": "object",
+                    "properties": {
+                        "Threshold": {
+                            "title": "Threshold (in minutes)",
+                            "type": "integer"
+                        }
+                    }
+                }
+            ]
+        },
+        "JamfProSettings": {
+            "description": "Allows running the demotion script from Jamf Pro instead of locally.",
+            "title": "Jamf Pro Settings",
+            "anyOf": [
+                {
+                    "title": "Not Configured",
+                    "type": "null"
+                },
+                {
+                    "title": "Configured",
+                    "type": "object",
+                    "properties": {
+                        "DemoteFromJamf": {
+                            "title": "Demote from Jamf Pro",
+                            "anyOf": [
+                                {
+                                    "title": "Not Configured",
+                                    "type": "null"
+                                },
+                                {
+                                    "title": "Configured",
+                                    "type": "object",
+                                    "properties": {
+                                        "UsePolicy": {
+                                            "title": "Use Jamf Policy",
+                                            "description": "Use Jamf policy to demote the user.",
+                                            "type": "boolean",
+                                            "default": true
+                                        },
+                                        "JamfTrigger": {
+                                            "title": "Custom Trigger",
+                                            "anyOf": [
+                                                {
+                                                    "title": "Not Configured",
+                                                    "type": "null"
+                                                },
+                                                {
+                                                    "title": "Configured",
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "Trigger": {
+                                                            "title": "Trigger",
+                                                            "description": "Customize the Jamf trigger.",
+                                                            "type": "string",
+                                                            "options": {
+                                                                "inputAttributes": {
+                                                                    "placeholder": "privilegesDemote"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        "StandaloneMode": {
+            "description": "Use PrivilegesDemoter without the SAP Privileges app.",
+            "title": "Standalone Mode",
+            "anyOf": [
+                {
+                    "title": "Not Configured",
+                    "type": "null"
+                },
+                {
+                    "title": "Configured",
+                    "type": "object",
+                    "properties": {
+                        "Standalone": {
+                            "title": "Standalone",
+                            "type": "boolean",
+                            "default": true
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
