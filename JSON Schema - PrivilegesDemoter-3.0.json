@@ -8,8 +8,8 @@
         }
     ],
     "properties": {
-        "NotificationAgent": {
-            "description": "Notification agent settings. Configure ONLY ONE.",
+        "notificationAgent": {
+            "description": "Select how the user will be notified. Configure ONLY ONE agent. If not configured, Jamf Helper is default.",
             "title": "Notification Agent",
             "anyOf": [
                 {
@@ -20,8 +20,8 @@
                     "title": "Configured",
                     "type": "object",
                     "properties": {
-                        "IBMNotifier": {
-                            "description": "IBM Notifier settings.",
+                        "ibmNotifier": {
+                            "description": "Use IBM Notifier as the notification agent.",
                             "title": "IBM Notifier",
                             "anyOf": [
                                 {
@@ -30,83 +30,11 @@
                                 },
                                 {
                                     "title": "Configured",
-                                    "type": "object",
-                                    "properties": {
-                                        "UseIBMNotifier": {
-                                            "title": "Use IBM Notifier",
-                                            "description": "Use IBM Notifier as the notification agent.",
-                                            "type": "boolean",
-                                            "default": true
-                                        },
-                                        "NotificationSound": {
-                                            "title": "Notification Sound",
-                                            "description": "Notification sound is enabled by default. (Only available with IBM Notifier)",
-                                            "type": "boolean",
-                                            "default": true
-                                        },
-                                        "IBMNotifierPath": {
-                                            "description": "Settings for non-standard IBM Notifier location.",
-                                            "title": "IBM Notifier Path",
-                                            "anyOf": [
-                                                {
-                                                    "title": "Not Configured",
-                                                    "type": "null"
-                                                },
-                                                {
-                                                    "title": "Configured",
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "IBMNotifierPath": {
-                                                            "title": "IBM Notifier Path",
-                                                            "description": "(Optional) Only required if IBM Notifier is not at the default location.",
-                                                            "type": "string",
-                                                            "options": {
-                                                                "inputAttributes": {
-                                                                    "placeholder": "/Applications/IBM Notifier.app"
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        },
-                                        "RebrandedIBMNotifier": {
-                                            "description": "Settings for rebranded IBM Notifier Application.",
-                                            "title": "Rebranded IBM Notifier",
-                                            "anyOf": [
-                                                {
-                                                    "title": "Not Configured",
-                                                    "type": "null"
-                                                },
-                                                {
-                                                    "title": "Configured",
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "IBMNotifierBinary": {
-                                                            "title": "IBM Notifier Binary",
-                                                            "description": "(Optional) Only required if app is rebranded with different binary name.",
-                                                            "links": [
-                                                                {
-                                                                    "rel": "More information",
-                                                                    "href": "https://github.com/IBM/mac-ibm-notifications/wiki/Rebranding-the-application"
-                                                                }
-                                                            ],
-                                                            "type": "string",
-                                                            "options": {
-                                                                "inputAttributes": {
-                                                                    "placeholder": "IBM Notifier"
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
+                                    "type": "boolean"
                                 }
                             ]
                         },
-                        "SwiftDialog": {
+                        "swiftDialog": {
                             "description": "Use SwiftDialog as the notification agent.",
                             "title": "Swift Dialog",
                             "anyOf": [
@@ -116,19 +44,11 @@
                                 },
                                 {
                                     "title": "Configured",
-                                    "type": "object",
-                                    "properties": {
-                                        "UseSwiftDialog": {
-                                            "title": "Use Swift Dialog",
-                                            "type": "boolean",
-                                            "default": true
-                                        }
-                                    }
+                                    "type": "boolean"
                                 }
                             ]
-                        }
-                        ,
-                        "DisableNotifications": {
+                        },
+                        "disableNotifications": {
                             "description": "Do not show notifications. Silently demote the user in the background.",
                             "title": "Disable Notifications",
                             "anyOf": [
@@ -138,14 +58,7 @@
                                 },
                                 {
                                     "title": "Configured",
-                                    "type": "object",
-                                    "properties": {
-                                        "Silent": {
-                                            "title": "Demote Silently",
-                                            "type": "boolean",
-                                            "default": true
-                                        }
-                                    }
+                                    "type": "boolean"
                                 }
                             ]
                         }
@@ -153,9 +66,9 @@
                 }
             ]
         },
-        "UserInterface": {
-            "description": "User interface settings.",
-            "title": "User Interface",
+        "ibmNotifierSettings": {
+            "description": "Custom settings only available when IBM Notifier is set to true.",
+            "title": "Optional IBM Notifier Settings",
             "anyOf": [
                 {
                     "title": "Not Configured",
@@ -165,9 +78,9 @@
                     "title": "Configured",
                     "type": "object",
                     "properties": {
-                        "HelpButton": {
-                            "description": "Setting for the help button.",
-                            "title": "Help Button",
+                        "notificationSound": {
+                            "description": "Play a sound when notification appears. Default: true",
+                            "title": "IBM Notifier Sound",
                             "anyOf": [
                                 {
                                     "title": "Not Configured",
@@ -175,32 +88,32 @@
                                 },
                                 {
                                     "title": "Configured",
-                                    "type": "object",
-                                    "properties": {
-                                        "HelpButtonStatus": {
-                                            "title": "Help Button Status",
-                                            "type": "boolean",
-                                            "default": true
-                                        },
-                                        "HelpButtonType": {
-                                            "title": "Help Button Type",
-                                            "type": "string",
-                                            "enum": [
-                                                "infopopup",
-                                                "link"
-                                            ]
-                                        },
-                                        "HelpButtonPayload": {
-                                            "title": "Help Button Payload",
-                                            "type": "string"
+                                    "type": "boolean"
+                                }
+                            ]
+                        },
+                        "ibmNotifierPath": {
+                            "description": "Path to IBM Notifier application. Only required if IBM Notifier is not at the default location.",
+                            "title": "IBM Notifier Custom Path",
+                            "anyOf": [
+                                {
+                                    "title": "Not Configured",
+                                    "type": "null"
+                                },
+                                {
+                                    "title": "Configured",
+                                    "type": "string",
+                                    "options": {
+                                        "inputAttributes": {
+                                            "placeholder": "/Applications/IBM Notifier.app"
                                         }
                                     }
                                 }
                             ]
                         },
-                        "MainText": {
-                            "description": "Reminder text that is displayed to the user.",
-                            "title": "Main Text",
+                        "ibmNotifierBinary": {
+                            "description": "IBM Notifier binary name. Only required if app is rebranded with different binary name.",
+                            "title": "Rebranded IBM Notifier",
                             "anyOf": [
                                 {
                                     "title": "Not Configured",
@@ -208,12 +121,16 @@
                                 },
                                 {
                                     "title": "Configured",
-                                    "type": "object",
-                                    "properties": {
-                                        "Text": {
-                                            "title": "Text",
-                                            "description": "Use \\n for a new line.",
-                                            "type": "string"
+                                    "links": [
+                                        {
+                                            "rel": "More information",
+                                            "href": "https://github.com/IBM/mac-ibm-notifications/wiki/Rebranding-the-application"
+                                        }
+                                    ],
+                                    "type": "string",
+                                    "options": {
+                                        "inputAttributes": {
+                                            "placeholder": "IBM Notifier"
                                         }
                                     }
                                 }
@@ -223,8 +140,62 @@
                 }
             ]
         },
-        "ExcludedAdmins": {
-            "description": "Comma separated list of administrators to exclude from demotion.",
+        "helpButton": {
+            "description": "Help button is ONLY available when using IBM Notifier or Swift Dialog as the notification agent.",
+            "title": "Help Button",
+            "anyOf": [
+                {
+                    "title": "Not Configured",
+                    "type": "null"
+                },
+                {
+                    "title": "Configured",
+                    "type": "object",
+                    "properties": {
+                        "helpButtonStatus": {
+                            "title": "Help Button Status",
+                            "description": "Enable the help button.",
+                            "type": "boolean"
+                        },
+                        "helpButtonType": {
+                            "title": "Help Button Type",
+                            "description": "Use infopopup type for text or link type for a URL.",
+                            "type": "string",
+                            "enum": [
+                                "infopopup",
+                                "link"
+                            ]
+                        },
+                        "helpButtonPayload": {
+                            "title": "Help Button Payload",
+                            "description": "Either text or a URL depending on the type set above.",
+                            "type": "string"
+                        }
+                    }
+                }
+            ]
+        },
+        "mainText": {
+            "title": "Main Text",
+            "anyOf": [
+                {
+                    "title": "Not Configured",
+                    "type": "null"
+                },
+                {
+                    "title": "Configured",
+                    "description": "Reminder text that is displayed to the user. Use \\n for a new line.",
+                    "type": "string",
+                    "options": {
+                        "inputAttributes": {
+                            "placeholder": "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?"
+                        }
+                    }
+                }
+            ]
+        },
+        "excludedAdmins": {
+            "description": "Comma-separated list of administrators to exclude from demotion.",
             "title": "Excluded Admins",
             "anyOf": [
                 {
@@ -233,23 +204,17 @@
                 },
                 {
                     "title": "Configured",
-                    "type": "object",
-                    "properties": {
-                        "AdminsToExclude": {
-                            "title": "Admins to Exclude",
-                            "type": "string",
-                            "options": {
-                                "inputAttributes": {
-                                    "placeholder": "OrgAdmin, JamfAdmin"
-                                }
-                            }
+                    "type": "string",
+                    "options": {
+                        "inputAttributes": {
+                        "placeholder": "OrgAdmin, JamfAdmin"
                         }
                     }
                 }
             ]
         },
-        "Reminder": {
-            "description": "Amount of time before administrators see the reminder and/or get demoted to standard.",
+        "reminderThreshold": {
+            "description": "Amount of time (in minutes) before administrators see the reminder and/or get demoted to standard.",
             "title": "Reminder Threshold",
             "anyOf": [
                 {
@@ -258,17 +223,11 @@
                 },
                 {
                     "title": "Configured",
-                    "type": "object",
-                    "properties": {
-                        "Threshold": {
-                            "title": "Threshold (in minutes)",
-                            "type": "integer"
-                        }
-                    }
+                    "type": "integer"
                 }
             ]
         },
-        "JamfProSettings": {
+        "jamfProSettings": {
             "description": "Allows running the demotion script from Jamf Pro instead of locally.",
             "title": "Jamf Pro Settings",
             "anyOf": [
@@ -280,8 +239,9 @@
                     "title": "Configured",
                     "type": "object",
                     "properties": {
-                        "DemoteFromJamf": {
-                            "title": "Demote from Jamf Pro",
+                        "useJamfPolicy": {
+                            "description": "Use a jamf policy to demote the user.",
+                            "title": "Use Jamf Policy",
                             "anyOf": [
                                 {
                                     "title": "Not Configured",
@@ -289,38 +249,24 @@
                                 },
                                 {
                                     "title": "Configured",
-                                    "type": "object",
-                                    "properties": {
-                                        "UsePolicy": {
-                                            "title": "Use Jamf Policy",
-                                            "description": "Use Jamf policy to demote the user.",
-                                            "type": "boolean",
-                                            "default": true
-                                        },
-                                        "JamfTrigger": {
-                                            "title": "Custom Trigger",
-                                            "anyOf": [
-                                                {
-                                                    "title": "Not Configured",
-                                                    "type": "null"
-                                                },
-                                                {
-                                                    "title": "Configured",
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "Trigger": {
-                                                            "title": "Trigger",
-                                                            "description": "Customize the Jamf trigger.",
-                                                            "type": "string",
-                                                            "options": {
-                                                                "inputAttributes": {
-                                                                    "placeholder": "privilegesDemote"
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
+                                    "type": "boolean"
+                                }
+                            ]
+                        },
+                        "jamfTrigger": {
+                            "description": "Customize the jamf trigger used for demotion. Default is privilegesDemote",
+                            "title": "Jamf Policy Trigger",
+                            "anyOf": [
+                                {
+                                    "title": "Not Configured",
+                                    "type": "null"
+                                },
+                                {
+                                    "title": "Configured",
+                                    "type": "string",
+                                    "options": {
+                                        "inputAttributes": {
+                                            "placeholder": "privilegesDemote"
                                         }
                                     }
                                 }
@@ -330,8 +276,8 @@
                 }
             ]
         },
-        "StandaloneMode": {
-            "description": "Use PrivilegesDemoter without the SAP Privileges app.",
+        "standaloneMode": {
+            "description": "Use PrivilegesDemoter alone, without the SAP Privileges app.",
             "title": "Standalone Mode",
             "anyOf": [
                 {
@@ -340,14 +286,7 @@
                 },
                 {
                     "title": "Configured",
-                    "type": "object",
-                    "properties": {
-                        "Standalone": {
-                            "title": "Standalone",
-                            "type": "boolean",
-                            "default": true
-                        }
-                    }
+                    "type": "boolean"
                 }
             ]
         }
