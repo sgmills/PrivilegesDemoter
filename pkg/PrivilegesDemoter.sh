@@ -347,7 +347,8 @@ prompt_with_swiftDialog () {
 		"${help_info[@]}" \
 		--timer 120 \
 		--hidetimerbar \
-		--small )
+		--small \
+		--ontop )
 		
 		echo "$?"
 	}
