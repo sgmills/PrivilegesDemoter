@@ -41,53 +41,53 @@ pdPrefs="/Library/Managed Preferences/blog.mostlymac.privilegesdemoter.plist"
 
 if [[ -e "$pdPrefs" ]]; then
 	# Get help button status
-	help_button_status="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonStatus" "$pdPrefs" 2>/dev/null )"
+	help_button_status="$( /usr/libexec/PlistBuddy -c "print helpButton:helpButtonStatus" "$pdPrefs" 2>/dev/null )"
 	
 	# Get the help button type
-	help_button_type="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonType" "$pdPrefs" 2>/dev/null )"
+	help_button_type="$( /usr/libexec/PlistBuddy -c "print helpButton:helpButtonType" "$pdPrefs" 2>/dev/null )"
 	
 	# Get the help button payload
-	help_button_payload="$( /usr/libexec/PlistBuddy -c "print UserInterface:HelpButton:HelpButtonPayload" "$pdPrefs" 2>/dev/null )"
+	help_button_payload="$( /usr/libexec/PlistBuddy -c "print helpButton:helpButtonPayload" "$pdPrefs" 2>/dev/null )"
 	
 	# Get notification sound setting
-	notification_sound="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:NotificationSound" "$pdPrefs" 2>/dev/null )"
+	notification_sound="$( /usr/libexec/PlistBuddy -c "print ibmNotifierSettings:notificationSound" "$pdPrefs" 2>/dev/null )"
 	
 	# Are we using IBM Notifer?
-	ibm_notifier="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:UseIBMNotifier" "$pdPrefs" 2>/dev/null )"
+	ibm_notifier="$( /usr/libexec/PlistBuddy -c "print notificationAgent:ibmNotifier" "$pdPrefs" 2>/dev/null )"
 	
 	# Are we using Swift Dialog?
-	swift_dialog="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:SwiftDialog:UseSwiftDialog" "$pdPrefs" 2>/dev/null )"
+	swift_dialog="$( /usr/libexec/PlistBuddy -c "print notificationAgent:swiftDialog" "$pdPrefs" 2>/dev/null )"
 	
 	# Get list of excluded admins
-	admin_to_exclude="$( /usr/libexec/PlistBuddy -c "print ExcludedAdmins:AdminsToExclude" "$pdPrefs" 2>/dev/null )"
+	admin_to_exclude="$( /usr/libexec/PlistBuddy -c "print excludedAdmins" "$pdPrefs" 2>/dev/null )"
 	
 	# Get silent operation setting
-	silent="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:DisableNotifications:Silent" "$pdPrefs" 2>/dev/null )"
+	silent="$( /usr/libexec/PlistBuddy -c "print notificationAgent:disableNotifications" "$pdPrefs" 2>/dev/null )"
 	
 	# Get setting for standalone mode without SAP Privileges
-	standalone="$( /usr/libexec/PlistBuddy -c "print StandaloneMode:Standalone" "$pdPrefs" 2>/dev/null )"
+	standalone="$( /usr/libexec/PlistBuddy -c "print standaloneMode" "$pdPrefs" 2>/dev/null )"
 	
 	# Get main text for notifications. Set to default if not found
-	if [[ ! $( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null ) ]]; then
+	if [[ ! $( /usr/libexec/PlistBuddy -c "print mainText" "$pdPrefs" 2>/dev/null ) ]]; then
 		main_text=$( printf "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?" )
 	else
-		get_text="$( /usr/libexec/PlistBuddy -c "print UserInterface:MainText:Text" "$pdPrefs" 2>/dev/null )"
+		get_text="$( /usr/libexec/PlistBuddy -c "print mainText" "$pdPrefs" 2>/dev/null )"
 		# Strip out extra slash in new line characters
 		main_text=$( printf "${get_text//'\\n'/\n}" )
 	fi
 	
 	# Check for IBM Notifier path. Set to default if not found
-	if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null ) ]]; then
+	if [[ ! $( /usr/libexec/PlistBuddy -c "print ibmNotifierSettings:ibmNotifierPath" "$pdPrefs" 2>/dev/null ) ]]; then
 		ibm_notifier_path="/Applications/IBM Notifier.app"
 	else
-		ibm_notifier_path="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:IBMNotifierPath:IBMNotifierPath" "$pdPrefs" 2>/dev/null )"
+		ibm_notifier_path="$( /usr/libexec/PlistBuddy -c "print ibmNotifierSettings:ibmNotifierPath" "$pdPrefs" 2>/dev/null )"
 	fi
 	
 	# Check for IBM Notifier custom binary name. Set to default if not found
-	if [[ ! $( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null ) ]]; then
+	if [[ ! $( /usr/libexec/PlistBuddy -c "print ibmNotifierSettings:ibmNotifierBinary" "$pdPrefs" 2>/dev/null ) ]]; then
 		ibm_notifier_binary="IBM Notifier"
 	else
-		ibm_notifier_binary="$( /usr/libexec/PlistBuddy -c "print NotificationAgent:IBMNotifier:RebrandedIBMNotifier:IBMNotifierBinary" "$pdPrefs" 2>/dev/null )"
+		ibm_notifier_binary="$( /usr/libexec/PlistBuddy -c "print ibmNotifierSettings:ibmNotifierBinary" "$pdPrefs" 2>/dev/null )"
 	fi
 else
 	main_text=$( printf "You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still require elevated privileges?" )
