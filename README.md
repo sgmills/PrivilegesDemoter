@@ -1,6 +1,6 @@
 # PrivilegesDemoter
 
-## [Please refer to the wiki for detailed documentation]()
+## [Please refer to the wiki for detailed documentation](https://github.com/sgmills/PrivilegesDemoter/wiki)
 
 PrivilegesDemoter allows users to self manage local administrator rights, while reminding them not to operate as an administrator for extended periods of time. Additionally, each elevation and demotion event is recorded and saved to a log file.
 
@@ -18,4 +18,4 @@ The PrivilegesDemoter script runs every 5 minutes to check if the currently logg
 
 ## Configuration
 
-As of version 3.0 and higher, PrivilegesDemoter is configured using a Configuration Profile. This script was originally designed to work with Macs enrolled in Jamf Pro with SAP Privileges installed, but now has additional options for use with other configurations. Please see the wiki for more information on available options.
+As of version 3.0 and higher, PrivilegesDemoter is configured using a Configuration Profile. This script was originally designed to work with Macs enrolled in Jamf Pro with SAP Privileges installed. Versions 3.0 and higher have additional options for use with other agents and workflows. Please see the [wiki](https://github.com/sgmills/PrivilegesDemoter/wiki) for more information on available options.
