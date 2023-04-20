@@ -498,7 +498,7 @@ while test $# -gt 0; do
 		;;
 		--demote-silent)
 			# Set the silent flag to true
-			silent= true
+			silent=true
 			# Run function to demote the user now
 			demoteUser
 		;;
