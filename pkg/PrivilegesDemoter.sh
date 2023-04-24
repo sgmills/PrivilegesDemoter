@@ -103,7 +103,13 @@ else
 fi
 
 # Set path to the icon
-icon="/usr/local/mostlymac/icon.png"
+if [ -f /usr/local/mostlymac/icon.png ]; then
+	icon="/usr/local/mostlymac/icon.png"
+elif [ -f /Applications/Privileges.app/Contents/Resources/AppIcon.icns ]; then
+	icon="/Applications/Privileges.app/Contents/Resources/AppIcon.icns"
+else
+	icon="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/AlertNoteIcon.icns"
+fi
 
 # Set the default path to swift dialog
 swift_dialog_path="/usr/local/bin/dialog"
