@@ -393,34 +393,36 @@ containsUser () {
 	return 0
 }
 
+admin_to_exclude="sam.mills"
+
 # Function to perform admin user demotion
 demoteUser () {
 	# Check for a logged in user
 	if [[ $currentUser != "" ]]; then
-		
-		# Read comma separated list of excluded admins into array
-		IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
-		
-		# Add always excluded users to array
-		excludedUsers+=("root" "_mbsetupuser")
-		
-		# Use function to check if current user is excluded from demotion
-		containsUser "$currentUser" "${excludedUsers[@]}"
-		excludedUserLoggedIn="$?"
-		
-		# If current user is excluded from demotion, reset timer and exit
-		if [[ "$excludedUserLoggedIn" = 1 ]]; then
-			pdLog "Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
-			# Reset timer and exit 0
-			rm "$checkFile" &> /dev/null
-			exit 0
-		fi
 		
 		# Get the current user's UID
 		currentUserID=$(id -u "$currentUser")
 		
 		# If current user is an admin, remove rights
 		if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
+			
+			# Read comma separated list of excluded admins into array
+			IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
+			
+			# Add always excluded users to array
+			excludedUsers+=("root" "_mbsetupuser")
+			
+			# Use function to check if current user is excluded from demotion
+			containsUser "$currentUser" "${excludedUsers[@]}"
+			excludedUserLoggedIn="$?"
+			
+			# If current user is excluded from demotion, reset timer and exit
+			if [[ "$excludedUserLoggedIn" = 1 ]]; then
+				pdLog "Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
+				# Reset timer and exit 0
+				rm "$checkFile" &> /dev/null
+				exit 0
+			fi
 			
 			# User with admin is logged in.
 			# If silent option is passed, demote silently
