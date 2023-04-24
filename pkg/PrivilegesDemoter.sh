@@ -380,10 +380,35 @@ prompt_with_jamfHelper () {
 	buttonClicked=$( prompt_user )
 }
 
+# Function to check if array contains a user
+containsUser () {
+	local e
+	for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 1; done
+	return 0
+}
+
 # Function to perform admin user demotion
 demoteUser () {
 	# Check for a logged in user
 	if [[ $currentUser != "" ]]; then
+		
+		# Read comma separated list of excluded admins into array
+		IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
+		
+		# Add always excluded users to array
+		excludedUsers+=("root" "_mbsetupuser")
+		
+		# Use function to check if current user is excluded from demotion
+		containsUser "$currentUser" "${excludedUsers[@]}"
+		excludedUserLoggedIn="$?"
+		
+		# If current user is excluded from demotion, reset timer and exit
+		if [[ "$excludedUserLoggedIn" = 1 ]]; then
+			pdLog "Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
+			# Reset timer and exit 0
+			rm "$checkFile" &> /dev/null
+			exit 0
+		fi
 		
 		# Get the current user's UID
 		currentUserID=$(id -u "$currentUser")
@@ -517,37 +542,6 @@ while test $# -gt 0; do
 	esac
 	shift
 done
-
-####################################################################################################
-# SET EXCLUDED USERS #
-
-# Read comma separated list of excluded admins into array
-IFS=', ' read -r -a excludedUsers <<< "$admin_to_exclude"
-
-# Add always excluded users to array
-excludedUsers+=("root" "_mbsetupuser")
-
-# Function to check if array contains a user
-containsUser () {
-	local e
-	for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 1; done
-	return 0
-}
-
-# Use function to check if current user is excluded from demotion
-containsUser "$currentUser" "${excludedUsers[@]}"
-excludedUserLoggedIn="$?"
-
-####################################################################################################
-# STOP HERE AND EXIT IF EXCLUDED USER IS LOGGED IN #
-
-# If current user is excluded from demotion, reset timer and exit
-if [[ "$excludedUserLoggedIn" = 1 ]]; then
-	pdLog "Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
-	# Reset timer and exit 0
-	rm "$checkFile" &> /dev/null
-	exit 0
-fi
 
 ####################################################################################################
 # THRESHOLD SETUP #
