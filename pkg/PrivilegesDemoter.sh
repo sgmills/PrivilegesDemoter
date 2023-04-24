@@ -393,8 +393,6 @@ containsUser () {
 	return 0
 }
 
-admin_to_exclude="sam.mills"
-
 # Function to perform admin user demotion
 demoteUser () {
 	# Check for a logged in user
