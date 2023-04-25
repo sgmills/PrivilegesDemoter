@@ -4,7 +4,7 @@
 #
 # SCRIPT: Demote Admin Privileges
 # AUTHOR: Sam Mills (github.com/sgmills)
-# DATE:   08 November 2022
+# DATE:   25 April 2023
 # REV:    3.0
 #
 ####################################################################################################
