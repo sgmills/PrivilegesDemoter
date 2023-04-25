@@ -398,6 +398,19 @@ demoteUser () {
 	# Check for a logged in user
 	if [[ $currentUser != "" ]]; then
 		
+		# If jamf is set to true, try using a jamf policy
+		if [[ "$jamf" = true ]]; then
+			# Check that Jamf Pro is available
+			if /usr/local/bin/jamf checkJSSConnection -retry 1 &> /dev/null; then
+				# Jamf is available. Call the jamf policy by trigger and exit
+				/usr/local/bin/jamf policy -event "$jamf_trigger"
+				exit 0
+			else
+				# Jamf is not available. Log and continue with local demotion.
+				pdLog "Error: Jamf Pro Server could not be reached. Continuing locally..."
+			fi
+		fi
+		
 		# Get the current user's UID
 		currentUserID=$(id -u "$currentUser")
 		
@@ -577,11 +590,6 @@ passedThreshold="$?"
 
 # If logged in user is passed the threshold offer to demote them
 if [[ "$passedThreshold" = 1 ]]; then
-	# Check if we should perform demotion from Jamf or locally
-	if [[ "$jamf" = true ]]; then
-		/usr/local/bin/jamf policy -event "$jamf_trigger"
-	else
-		# Use function to demote user
-		demoteUser
-	fi
+	# Use function to demote user
+	demoteUser
 fi
