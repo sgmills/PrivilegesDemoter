@@ -48,6 +48,20 @@
                                 }
                             ]
                         },
+                        "jamfHelper": {
+                            "description": "(Optional) Use Jamf Helper as the notification agent. Default is Jamf Helper even if this key is not set.",
+                            "title": "Jamf Helper",
+                            "anyOf": [
+                                {
+                                    "title": "Not Configured",
+                                    "type": "null"
+                                },
+                                {
+                                    "title": "Configured",
+                                    "type": "boolean"
+                                }
+                            ]
+                        },
                         "disableNotifications": {
                             "description": "Do not show notifications. Silently demote the user in the background.",
                             "title": "Disable Notifications",
