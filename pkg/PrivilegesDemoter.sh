@@ -456,14 +456,14 @@ demoteUser () {
 					if [[ -e "${ibm_notifier_path}" ]]; then
 						prompt_with_ibmNotifier
 					else
-						pdLog "IBM Notifier not found. Defaulting to Jamf Helper for notification."
+						pdLog "Warn: IBM Notifier not found. Defaulting to Jamf Helper for notification."
 						prompt_with_jamfHelper
 					fi
 				elif [[ $swift_dialog = true ]]; then
 					if [[ -e "${swift_dialog_path}" ]]; then
 						prompt_with_swiftDialog
 					else
-						pdLog "Swift Dialog not found. Defaulting to Jamf Helper for notification."
+						pdLog "Warn: Swift Dialog not found. Defaulting to Jamf Helper for notification."
 						prompt_with_jamfHelper
 					fi
 				else
