@@ -345,15 +345,17 @@ prompt_with_swiftDialog () {
 	# Prompt the user
 	prompt_user() {
 		button=$( "${swift_dialog_path}" \
-		--title "Privileges Reminder" \
+		--title none \
 		--message "$main_text" \
+		--messagefont size=15 \
 		--icon "$icon" \
+		--iconsize 75 \
 		--button1text No \
 		--button2text Yes \
 		"${help_info[@]}" \
 		--timer 120 \
-		--hidetimerbar \
-		--small \
+		--height 180 \
+		--width 520 \
 		--ontop )
 		
 		echo "$?"
