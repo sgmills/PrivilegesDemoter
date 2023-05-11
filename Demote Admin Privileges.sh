@@ -321,10 +321,20 @@ demoteUser () {
 				
 			else
 				# Notify the user. Use app that user defined and fall back jamf helper
-				if [[ $ibm_notifier = true ]] && [[ -e "${ibm_notifier_path}" ]]; then
-					prompt_with_ibmNotifier
-				elif [[ $swift_dialog = true ]] && [[ -e "${swift_dialog_path}" ]]; then
-					prompt_with_swiftDialog
+				if [[ $ibm_notifier = true ]]; then
+					if [[ -e "${ibm_notifier_path}" ]]; then
+						prompt_with_ibmNotifier
+					else
+						echo "IBM Notifier not found. Defaulting to Jamf Helper for notification."
+						prompt_with_jamfHelper
+					fi
+				elif [[ $swift_dialog = true ]]; then
+					if [[ -e "${swift_dialog_path}" ]]; then
+						prompt_with_swiftDialog
+					else
+						echo "Swift Dialog not found. Defaulting to Jamf Helper for notification."
+						prompt_with_jamfHelper
+					fi
 				else
 					prompt_with_jamfHelper
 				fi
