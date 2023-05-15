@@ -1,21 +1,14 @@
 #!/bin/bash
+#Version:3.0
 
 ####################################################################################################
-#
-# SCRIPT: Demote Admin Privileges
-# AUTHOR: Sam Mills (github.com/sgmills)
-# DATE:   25 April 2023
-# REV:    3.0
-#
-####################################################################################################
-#
-# Description
-#   This tool reminds users to operate as a standard user. If a given user has had admin privileges
-#	for longer than a specific threshold, they will be reminded to use standard user rights. Users
-#	are offered the option to remain admin or demote themselves.
-#
-#	Events to elevate privileges or demote are logged at /var/log/privileges.log.
-#
+# MUST BE RUN AS ROOT #
+
+if [ "$EUID" -ne 0 ]; then 
+	echo "This script must be run as root!"
+	exit
+fi
+
 ####################################################################################################
 # LOG SETUP #
 
@@ -27,11 +20,14 @@ if [ ! -f "$privilegesLog" ]; then
 	touch "$privilegesLog"
 fi
 
-# Create stamp for logging
-stamp="$(date +"%Y-%m-%d %H:%M:%S%z") blog.mostlymac.privileges.demoter"
-
-# Redirect output to log file and stdout for logging
-exec 1> >( tee -a "${privilegesLog}" ) 2>&1
+# Function for logging privileges demoter actions
+pdLog () {
+	# Create stamp for privileges demoter logging
+	stamp="$(date +"%Y-%m-%d %H:%M:%S%z") blog.mostlymac.privileges.demoter"
+	
+	# Redirect to log file
+	echo "$stamp $1" >> "$privilegesLog"
+}
 
 ####################################################################################################
 # SET SCRIPT VARIABLES #
@@ -61,11 +57,24 @@ if [[ -e "$pdPrefs" ]]; then
 	# Get list of excluded admins
 	admin_to_exclude="$( /usr/libexec/PlistBuddy -c "print excludedAdmins" "$pdPrefs" 2>/dev/null )"
 	
+	# Get admin threshold
+	admin_threshold="$( /usr/libexec/PlistBuddy -c "print reminderThreshold" "$pdPrefs" 2>/dev/null )"
+	
 	# Get silent operation setting
 	silent="$( /usr/libexec/PlistBuddy -c "print notificationAgent:disableNotifications" "$pdPrefs" 2>/dev/null )"
 	
+	# Get setting for running from jamf
+	jamf="$( /usr/libexec/PlistBuddy -c "print jamfProSettings:useJamfPolicy" "$pdPrefs" 2>/dev/null )"
+	
 	# Get setting for standalone mode without SAP Privileges
 	standalone="$( /usr/libexec/PlistBuddy -c "print standaloneMode" "$pdPrefs" 2>/dev/null )"
+	
+	# Check for jamf trigger. Set to default if not found
+	if [[ ! $( /usr/libexec/PlistBuddy -c "print jamfProSettings:jamfTrigger" "$pdPrefs" 2>/dev/null ) ]]; then
+		jamf_trigger="privilegesDemote"
+	else
+		jamf_trigger="$( /usr/libexec/PlistBuddy -c "print jamfProSettings:jamfTrigger" "$pdPrefs" 2>/dev/null )"
+	fi
 	
 	# Get main text for notifications. Set to default if not found
 	if [[ ! $( /usr/libexec/PlistBuddy -c "print mainText" "$pdPrefs" 2>/dev/null ) ]]; then
@@ -105,6 +114,12 @@ fi
 # Set the default path to swift dialog
 swift_dialog_path="/usr/local/bin/dialog"
 
+# Get DockToggleTimeout from SAP Privileges preferences (if it exists)
+sapPrivilegesPreferences="/Library/Managed Preferences/corp.sap.privileges.plist"
+if [ -e "$sapPrivilegesPreferences" ]; then
+	sapDockToggleTimeout=$( /usr/libexec/PlistBuddy -c "print DockToggleTimeout" "$sapPrivilegesPreferences" 2>/dev/null )
+fi
+
 # Log file which contains the timestamps of the last runs
 checkFile="/tmp/privilegesCheck"
 
@@ -123,12 +138,114 @@ UDID=$( ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $
 ####################################################################################################
 # FUNCTIONS #
 
+# Function to display help message with usage options
+usage () {
+	echo ""
+	echo "   Usage: ./PrivilegesDemoter.sh [--options]"
+	echo ""
+	echo "   [no flags]       If the current user has passed the admin threshold, offer to demote them."
+	echo "   --elevate        Elevate the current user to administrator"
+	echo "   --demote         Demote the current user to standard"
+	echo "   --demote-silent  Demote the current user to standard silently"
+	echo "   --status         Displays the current user's privileges"
+	echo "   --admin-time     Display elapsed time since last PrivilegesDemoter run"
+	echo "   --help           Display this message"
+	echo ""
+	
+	exit
+}
+
+# Function to get elapsed time since last run
+adminTime () {
+	if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
+		# If there is no checkfile explain why, then creat it.
+		if [[ ! -f ${checkFile} ]]; then
+			echo "PrivilegesDemoter has not run since the last elevation. Initializing timer now..."
+			echo "Note: PrivilegesDemoter only runs once every 5 minutes."
+			# Use function to initiate timestamp
+			initTimestamp
+		else
+			# Use function to initiate timestamp
+			initTimestamp
+		fi
+			
+		# Get the start time
+		startTime=$( head -n 1 "$checkFile" )
+		
+		# Get the elapsed time
+		elapsedTime=$((timeStamp - startTime))
+		
+		convertAndPrintSeconds() {
+			local totalSeconds=$1;
+			local seconds=$((totalSeconds%60));
+			local minutes=$((totalSeconds/60%60));
+			(( minutes > 0 )) && printf '%d minutes ' $minutes;
+			printf '%d seconds\n' $seconds;
+		}
+		
+		# Convert to human readable format
+		convertAndPrintSeconds "$elapsedTime"
+	else
+		# User is not admin.
+		echo "$currentUser is not an administrator. Nothing to do."
+	fi
+	
+	exit
+}
+
+# Function to elevate the current user
+elevate () {
+	if [[ "$standalone" = true ]] || [[ ! -e "${privilegesCLI}" ]]; then
+		if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
+			pdLog "Status: User $currentUser already has the requested privileges. Nothing to do."
+			echo "$currentUser is already an administrator. Nothing to do."
+		else
+			/usr/sbin/dseditgroup -o edit -a "$currentUser" -t user admin
+			initTimestamp
+			pdLog "Status: $currentUser is now an admin user on MachineID: $UDID."
+			echo "$currentUser now has administrator rights."
+		fi
+	else
+		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --add
+		initTimestamp
+	fi
+	
+	exit
+}
+
 # Function to demote the current user
 demote () {
 	if [[ "$standalone" = true ]] || [[ ! -e "${privilegesCLI}" ]]; then
 		/usr/sbin/dseditgroup -o edit -d "$currentUser" -t user admin
 	else
 		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --remove &> /dev/null
+	fi
+}
+
+# Function to get the current user status
+status () {
+	if [[ "$standalone" = true ]] || [[ ! -e "${privilegesCLI}" ]]; then
+		if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
+			echo "User $currentUser has administrator rights."
+		else
+			echo "User $currentUser has standard user rights."
+		fi
+	else
+		launchctl asuser "$currentUserID" sudo -u "$currentUser" "$privilegesCLI" --status
+	fi
+	
+	exit
+}
+
+
+# Function to get the last 5 minutes of logs from SAP privileges helper
+sapPrivilegesLogger () {
+	# The Privileges.app elevation event is not logged elsewhere, so this should capture it
+	privilegesHelperLog=$( log show --style compact --predicate 'process == "corp.sap.privileges.helper"' --last 5m | grep "SAPCorp" )
+	
+	# Check if elevation event exists and add it to the log file
+	if [ "$privilegesHelperLog" ]; then
+		echo "$privilegesHelperLog" | while read -r line; do echo "${line} on MachineID: $UDID" >> $privilegesLog; done
 	fi
 }
 
@@ -151,13 +268,13 @@ confirmPrivileges () {
 	
 	# If user is still admin, try revoking again using dseditgroup
 	if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin &> /dev/null; then
-		echo "$stamp Warn: ${1} is still an admin on MachineID: $UDID. Trying again..."
+		pdLog "Warn: ${1} is still an admin on MachineID: $UDID. Trying again..."
 		/usr/sbin/dseditgroup -o edit -d "${1}" -t user admin
 		sleep 1
 		
 		# If user was not sucessfully demoted after retry, write error to log. Otherwise log success.
 		if /usr/sbin/dseditgroup -o checkmember -m "${1}" admin &> /dev/null; then
-			echo "$stamp Error: Could not demote ${1} to standard on MachineID: $UDID."
+			pdLog "Error: Could not demote ${1} to standard on MachineID: $UDID."
 		else
 			# Successfully demoted with dseditgroup
 			# If dock is running and not in standalone mode, reload to display correct tile
@@ -166,12 +283,12 @@ confirmPrivileges () {
 			fi
 			
 			# Log that user was successfully demoted.
-			echo "$stamp Status: ${1} is now a standard user on MachineID: $UDID."
+			pdLog "Status: ${1} is now a standard user on MachineID: $UDID."
 		fi
 		
 	else
 		# Log that user was successfully demoted.
-		echo "$stamp Status: ${1} is now a standard user on MachineID: $UDID."
+		pdLog "Status: ${1} is now a standard user on MachineID: $UDID."
 	fi
 	
 	# Clean up privileges check log file to reset timer
@@ -283,6 +400,19 @@ demoteUser () {
 	# Check for a logged in user
 	if [[ $currentUser != "" ]]; then
 		
+		# If jamf is set to true, try using a jamf policy
+		if [[ "$jamf" = true ]]; then
+			# Check that Jamf Pro is available
+			if /usr/local/bin/jamf checkJSSConnection -retry 1 &> /dev/null; then
+				# Jamf is available. Call the jamf policy by trigger and exit
+				/usr/local/bin/jamf policy -event "$jamf_trigger"
+				exit 0
+			else
+				# Jamf is not available. Log and continue with local demotion.
+				pdLog "Error: Jamf Pro Server could not be reached. Continuing locally..."
+			fi
+		fi
+		
 		# Get the current user's UID
 		currentUserID=$(id -u "$currentUser")
 		
@@ -299,10 +429,9 @@ demoteUser () {
 			containsUser "$currentUser" "${excludedUsers[@]}"
 			excludedUserLoggedIn="$?"
 			
-			
 			# If current user is excluded from demotion, reset timer and exit
 			if [[ "$excludedUserLoggedIn" = 1 ]]; then
-				echo "$stamp Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
+				pdLog "Info: Excluded admin user $currentUser logged in on MachineID: $UDID. Will not perform demotion."
 				# Reset timer and exit 0
 				rm "$checkFile" &> /dev/null
 				exit 0
@@ -312,7 +441,7 @@ demoteUser () {
 			# If silent option is passed, demote silently
 			if [[ $silent = true ]]; then
 				# Revoke rights silently
-				echo "$stamp Info: Silent option used. Removing rights for $currentUser on MachineID: $UDID without notification."
+				pdLog "Info: Silent option used. Removing rights for $currentUser on MachineID: $UDID without notification."
 				# Use function to demote user
 				demote
 				
@@ -327,14 +456,14 @@ demoteUser () {
 					if [[ -e "${ibm_notifier_path}" ]]; then
 						prompt_with_ibmNotifier
 					else
-						echo "$stamp Warn: IBM Notifier not found. Defaulting to Jamf Helper for notification."
+						pdLog "Warn: IBM Notifier not found. Defaulting to Jamf Helper for notification."
 						prompt_with_jamfHelper
 					fi
 				elif [[ $swift_dialog = true ]]; then
 					if [[ -e "${swift_dialog_path}" ]]; then
 						prompt_with_swiftDialog
 					else
-						echo "$stamp Warn: Swift Dialog not found. Defaulting to Jamf Helper for notification."
+						pdLog "Warn: Swift Dialog not found. Defaulting to Jamf Helper for notification."
 						prompt_with_jamfHelper
 					fi
 				else
@@ -345,7 +474,7 @@ demoteUser () {
 			# If the user clicked NO (button 0), remove admin rights immediately
 			if [[ $buttonClicked = 0 ]]; then
 				# Revoke rights
-				echo "$stamp Decision: $currentUser no longer needs admin rights. Removing rights on MachineID: $UDID now."
+				pdLog "Decision: $currentUser no longer needs admin rights. Removing rights on MachineID: $UDID now."
 				# Use function to demote user
 				demote
 				
@@ -354,8 +483,8 @@ demoteUser () {
 				
 			# If the user clicked YES (button 2) leave admin rights in tact
 			elif [[ $buttonClicked = 2 ]]; then
-				echo "$stamp Decision: $currentUser says they still need admin rights on MachineID: $UDID."
-				echo "$stamp Status: Resetting timer and allowing $currentUser to remain an admin on MachineID: $UDID."
+				pdLog "Decision: $currentUser says they still need admin rights on MachineID: $UDID."
+				pdLog "Status: Resetting timer and allowing $currentUser to remain an admin on MachineID: $UDID."
 				
 				# Clean up privileges check file to reset timer
 				rm "$checkFile" &> /dev/null
@@ -365,7 +494,7 @@ demoteUser () {
 				
 			# If timeout occurred, (exit code 4) remove admin rights
 			elif [[ $buttonClicked = 4 ]]; then
-				echo "$stamp Decision: Timeout occurred. Removing admin rights for $currentUser on MachineID: $UDID now."
+				pdLog "Decision: Timeout occurred. Removing admin rights for $currentUser on MachineID: $UDID now."
 				# Use function to demote user
 				demote
 				
@@ -374,22 +503,105 @@ demoteUser () {
 				
 			# If unexpected code is returned, log an error
 			else
-				echo "$stamp Error: Unexpected exit code [$buttonClicked] returned from prompt. User: $currentUser, MachineID: $UDID."
+				pdLog "Error: Unexpected exit code [$buttonClicked] returned from prompt. User: $currentUser, MachineID: $UDID."
 			fi
 		else
 			# Current user is not an admin
-			echo "$stamp Info: $currentUser is not an admin on MachineID: $UDID."
+			pdLog "Info: $currentUser is not an admin on MachineID: $UDID."
 		fi
 	else
 		# No user currently logged in
-		echo "$stamp Info: No users logged in on MachineID: $UDID."
+		pdLog "Info: No users logged in on MachineID: $UDID."
 	fi
 	
 	exit
 }
 
-####################################################################################################
-# DEMOTE THE USER #
+# Function to check if admin time threshold is passed
+checkAdminThreshold () {
+	# Check if user is an admin
+	if /usr/sbin/dseditgroup -o checkmember -m "$currentUser" admin &> /dev/null; then
+		# Process admin time
+		oldTimeStamp=$(head -1 "${checkFile}")
+		echo "${timeStamp}" >> "${checkFile}"
+		
+		adminTime=$((timeStamp - oldTimeStamp))
+		
+		# If user is admin for more than the time limit, return true
+		if [[ ${adminTime} -ge ${timeLimit} ]]; then
+			return 1
+		fi
+	else
+		# User is not admin. Return false, and reset timer
+		rm "${checkFile}"
+		return 0
+	fi
+}
 
-# Use funciton to demote user
-demoteUser
+####################################################################################################
+# GET INPUTS #
+
+# Get inputs
+while test $# -gt 0; do
+	case "$1" in
+		--elevate)
+			# Run function to elevate the user now
+			elevate
+		;;
+		--demote)
+			# Run function to demote the user now
+			demoteUser
+		;;
+		--demote-silent)
+			# Set the silent flag to true
+			silent=true
+			# Run function to demote the user now
+			demoteUser
+		;;
+		--admin-time)
+			# Run function to display how long user has had admin rights
+			adminTime
+		;;
+		--status)
+			# Run function to display user status
+			status
+		;;
+		--help|-*)
+			# Display usage dialog
+			usage
+		;;
+	esac
+	shift
+done
+
+####################################################################################################
+# THRESHOLD SETUP #
+
+# Check for PrivilegesDemoter admin_threshold or SAP Privileges DockTileTimeout (in that order)
+# If keys are not present or set to 0, use default value of 15 minutes
+if [ "$admin_threshold" ] && [ "$admin_threshold" != 0 ]; then
+	timeLimit=$((admin_threshold * 60))
+elif [ "$sapDockToggleTimeout" ] && [ "$sapDockToggleTimeout" != 0 ]; then
+	timeLimit=$((sapDockToggleTimeout * 60))
+else
+	timeLimit=900
+fi
+
+####################################################################################################
+# DO THE WORK #
+
+# Use function to initiate timestamp
+initTimestamp
+
+# Use function to get the last 5 minutes of logs from SAP privileges helper
+sapPrivilegesLogger
+
+# Use function to determine if logged in user has passed the threshold
+checkAdminThreshold
+passedThreshold="$?"
+
+# If logged in user is passed the threshold offer to demote them
+if [[ "$passedThreshold" = 1 ]]; then
+	# Use function to demote user
+	demoteUser
+fi

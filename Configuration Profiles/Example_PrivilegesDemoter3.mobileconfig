@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadContent</key>
+			<dict>
+				<key>blog.mostlymac.privilegesdemoter</key>
+				<dict>
+					<key>Forced</key>
+					<array>
+						<dict>
+							<key>mcx_preference_settings</key>
+							<dict>
+								<key>notificationAgent</key>
+								<dict>
+									<key>ibmNotifier</key>
+									<true/>
+									<key>swiftDialog</key>
+									<false/>
+									<key>disableNotifications</key>
+									<false/>
+								</dict>
+								<key>ibmNotifierSettings</key>
+								<dict>
+									<key>notificationSound</key>
+									<true/>
+									<key>ibmNotifierPath</key>
+									<string>/Applications/IBM Notifier.app</string>
+									<key>ibmNotifierBinary</key>
+									<string>IBM Notifier</string>
+								</dict>
+								<key>helpButton</key>
+								<dict>
+									<key>helpButtonStatus</key>
+									<true/>
+									<key>helpButtonType</key>
+									<string>infopopup</string>
+									<key>helpButtonPayload</key>
+									<string>Questions? Contact the Help Desk at 555-1234</string>
+								</dict>
+								<key>mainText</key>
+								<string>You are currently an administrator on this device.\n\nIt is recommended to operate as a standard user whenever possible.\n\nDo you still need elevated privileges?</string>
+								<key>excludedAdmins</key>
+								<string>orgAdmin, jamfAdmin</string>
+								<key>reminderThreshold</key>
+								<integer>15</integer>
+								<key>jamfProSettings</key>
+								<dict>
+									<key>useJamfPolicy</key>
+									<true/>
+									<key>jamfTrigger</key>
+									<string>demote-user</string>
+								</dict>
+								<key>standaloneMode</key>
+								<false/>
+							</dict>
+						</dict>
+					</array>
+				</dict>
+			</dict>
+			<key>PayloadDisplayName</key>
+			<string>PrivilegesDemoter Settings</string>
+			<key>PayloadIdentifier</key>
+			<string>0B9C25FB-281A-482A-AB80-4551BB168B7E</string>
+			<key>PayloadOrganization</key>
+			<string>Any Org</string>
+			<key>PayloadType</key>
+			<string>com.apple.ManagedClient.preferences</string>
+			<key>PayloadUUID</key>
+			<string>0B9C25FB-281A-482A-AB80-4551BB168B7E</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Settings for PrivilegesDemoter</string>
+	<key>PayloadDisplayName</key>
+	<string>PrivilegesDemoter Settings</string>
+	<key>PayloadEnabled</key>
+	<true/>
+	<key>PayloadIdentifier</key>
+	<string>6AD24F25-8E72-41A3-9C4A-3C9F991BDB0D</string>
+	<key>PayloadOrganization</key>
+	<string>Any Org</string>
+	<key>PayloadRemovalDisallowed</key>
+	<true/>
+	<key>PayloadScope</key>
+	<string>System</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>6AD24F25-8E72-41A3-9C4A-3C9F991BDB0D</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>
