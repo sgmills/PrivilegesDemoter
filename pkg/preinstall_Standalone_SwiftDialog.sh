@@ -4,7 +4,7 @@
 install_dir=$( dirname "$0" )
 
 # Install Swift Dialog in the working directory
-/usr/sbin/installer -dumplog -verbose -pkg "$install_dir"/"dialog-2.1.0-4148.pkg" -target "$3"
+/usr/sbin/installer -dumplog -verbose -pkg "$install_dir"/"dialog-2.2.0-4535.pkg" -target "$3"
 
 # Unload launchDaemon to check for admin every 5 minutes
 launchctl bootout system /Library/LaunchDaemons/blog.mostlymac.privileges.check.plist 2>/dev/null
