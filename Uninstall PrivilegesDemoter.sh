@@ -1,5 +1,12 @@
 #!/bin/bash
 
+############################################
+# Elevate the user to admin before removal #
+############################################
+
+# Comment out if you want the user left as standard
+/usr/local/mostlymac/PrivilegesDemoter.sh --elevate
+
 #########################################
 # This removes all of PrivilegesDemoter #
 #########################################
