@@ -816,7 +816,7 @@ else
 	"summary": "'${scriptName}': '${webhookStatus}'",
 	"sections": [{
 		"activityTitle": "'${webhookStatus}'",
-		"activityImage": "https://usw2.ics.services.jamfcloud.com/icon/hash_2927020b3ba74fa8cf07c3304770a6276c6b1e95a2b87e8c4e8cb49c010763ed",
+		"activityImage": "https://github.com/AndrewMBarnett/PrivilegesDemoter/blob/main/Screenshots/install.png?raw=true",
 		"facts": [{
 			"name": "Computer Name (Serial Number):",
 			"value": "'"$computerName"' ('"$serialNumber"')"
