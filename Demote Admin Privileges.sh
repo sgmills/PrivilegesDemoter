@@ -894,7 +894,22 @@ case ${webhookEnabled} in
     ;;
 
     "false" ) # Don't notify
+    
         infoOut "Webhook Enabled flag set to: ${webhookEnabled}, skipping ..."
+        
+        # Use funciton to demote user
+		if [[ $swift_dialog = true ]]; then
+			if [[ ! -e "${swift_dialog_path}" ]]; then
+				infoOut "swiftDialog set as true, but no installed. Installing now..."
+				dialogCheck
+			else
+				infoOut "swiftDialog set as true and installed. Checking version..."
+				dialogCheck
+			fi
+		fi		
+
+		infoOut "Running Demote User Functions"
+			demoteUser
     ;;
 
     * ) # Catch-all
