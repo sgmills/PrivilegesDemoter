@@ -19,7 +19,7 @@ rm -f "/Library/LaunchDaemons/blog.mostlymac.privileges.check.plist" 2>/dev/null
 # Remove launchDaemon to confirm and optionally demote user if time limit is reached
 launchctl bootout system "/Library/LaunchDaemons/blog.mostlymac.privileges.demote.plist" 2>/dev/null
 launchctl remove "/Library/LaunchDaemons/blog.mostlymac.privileges.demote.plist" 2>/dev/null
-rm -f "Library/LaunchDaemons/blog.mostlymac.privileges.demote.plist" 2>/dev/null
+rm -f "/Library/LaunchDaemons/blog.mostlymac.privileges.demote.plist" 2>/dev/null
 
 # Remove script/folder
 rm -rf "/usr/local/mostlymac" 2>/dev/null
